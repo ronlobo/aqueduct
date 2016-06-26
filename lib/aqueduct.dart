@@ -76,6 +76,8 @@ part 'db/matcher_expression.dart';
 part 'db/persistent_store.dart';
 part 'db/model_context.dart';
 part 'db/persistent_store_query.dart';
+part 'db/schema_generator_backend.dart';
+part 'db/migrator.dart';
 
 // PostgreSQL
 
