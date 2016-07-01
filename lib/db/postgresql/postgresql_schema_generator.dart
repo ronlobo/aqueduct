@@ -14,21 +14,15 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
 
 
   void handleAddTableCommand(SchemaTable table) {
-    List<SchemaColumn> sortedColumns = new List.from(table.columns);
-    sortedColumns.sort((a, b) => a.name.compareTo(b.name));
-    var columnString = sortedColumns.map((sc) => _columnStringForColumn(sc)).join(",");
-
+    var columnString = table.columns.map((sc) => _columnStringForColumn(sc)).join(",");
     tableCommands.add("CREATE${isTemporary ? " TEMPORARY " : " "}TABLE ${table.name} (${columnString});");
 
-    List<SchemaIndex> sortedIndexes = new List.from(table.indexes);
-    sortedIndexes.sort((a, b) => a.name.compareTo(b.name));
-    indexCommands.addAll(sortedIndexes.map((i) => _indexStringForTableIndex(table, i)).toList());
+    indexCommands.addAll(table.indexes.map((i) => _indexStringForTableIndex(table, i)).toList());
 
-    List<SchemaColumn> sortedConstraints = table.columns
+    List<SchemaColumn> constraints = table.columns
       .where((col) => col.relatedColumnName != null)
       .toList();
-    sortedConstraints.sort((a, b) => a.name.compareTo(b.name));
-    constraintCommands.addAll(sortedConstraints.map((c) => _foreignKeyConstraintForTableConstraint(table, c)).toList());
+    constraintCommands.addAll(constraints.map((c) => _foreignKeyConstraintForTableConstraint(table, c)).toList());
   }
 
   String _foreignKeyConstraintForTableConstraint(SchemaTable sourceTable, SchemaColumn column) =>
