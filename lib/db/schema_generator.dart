@@ -24,7 +24,7 @@ class SchemaGenerator {
 }
 
 class SchemaTable {
-  SchemaTable(ModelEntity entity ) {
+  SchemaTable(ModelEntity entity) {
     name = entity.tableName;
 
     var validProperties = entity.properties.values
