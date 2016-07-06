@@ -32,4 +32,7 @@ abstract class SchemaGeneratorBackend {
   void handleRenameColumnCommand(SchemaTable table, SchemaColumn existingColumn, String newName);
   void handleAlterColumnCommand(SchemaTable table, SchemaColumn existingColumn, SchemaColumn updatedColumn, dynamic initialValue);
   void handleMoveColumnCommand(SchemaTable sourceTable, SchemaTable destinationTable, SchemaColumn column);
+
+  void addIndex(SchemaTable table, SchemaIndex index);
+  void deleteIndex(SchemaTable table, SchemaIndex index);
 }
