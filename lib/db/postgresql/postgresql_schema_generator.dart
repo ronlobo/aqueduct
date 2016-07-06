@@ -89,6 +89,15 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
     throw 'UnsupportedOperation';
   }
 
+  void addIndex(SchemaTable table, SchemaIndex index) {
+    indexCommands.add(_indexStringForTableIndex(table, index));
+  }
+
+  void deleteIndex(SchemaTable table, SchemaIndex index) {
+    var actualColumn = table.columns.firstWhere((col) => col.name == index.name);
+    indexCommands.add("DROP INDEX ${table.name}_${_columnNameForColumn(actualColumn)}_idx ${actualColumn.relatedColumnName != null ? "CASCADE" : "RESTRICT"}");
+  }
+
   String _foreignKeyConstraintForTableConstraint(SchemaTable sourceTable, SchemaColumn column) =>
       "ALTER TABLE ONLY ${sourceTable.name} ADD FOREIGN KEY (${_columnNameForColumn(column)}) "
           "REFERENCES ${column.relatedTableName} (${column.relatedColumnName}) "
