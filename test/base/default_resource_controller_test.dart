@@ -218,8 +218,8 @@ class TestPipeline extends ApplicationPipeline {
 
   @override
   Future willOpen() async {
-    var generator = new SchemaGenerator(context.dataModel);
-    var specificGenerator = new PostgreSQLSchemaGenerator(generator.serialized, temporary: true);
+    var schema = new Schema(context.dataModel);
+    var specificGenerator = new PostgreSQLSchemaGenerator.fromSchema(schema, temporary: true);
     for (var cmd in specificGenerator.commands) {
       await context.persistentStore.execute(cmd);
     }

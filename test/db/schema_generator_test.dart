@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 void main() {
   test("A single, simple model", () {
     var dataModel = new DataModel([SimpleModel]);
-    var generator = new SchemaGenerator(dataModel);
+    var generator = new Schema(dataModel);
     var json = generator.serialized;
     expect(json.length, 1);
     expect(json.first["op"], "table.add");
@@ -31,7 +31,7 @@ void main() {
 
   test("An extensive model", () {
     var dataModel = new DataModel([ExtensiveModel]);
-    var generator = new SchemaGenerator(dataModel);
+    var generator = new Schema(dataModel);
     var json = generator.serialized;
     expect(json.length, 1);
     expect(json.first["op"], "table.add");
@@ -154,7 +154,7 @@ void main() {
 
   test("A model graph", () {
     var dataModel = new DataModel([Container, DefaultItem, LoadedItem, LoadedSingleItem]);
-    var generator = new SchemaGenerator(dataModel);
+    var generator = new Schema(dataModel);
     var json = generator.serialized;
 
     expect(json.length, 4);

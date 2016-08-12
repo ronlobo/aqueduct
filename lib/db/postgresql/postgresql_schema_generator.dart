@@ -1,8 +1,8 @@
 part of aqueduct;
 
 class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
-  PostgreSQLSchemaGenerator(List<Map> operations, {bool temporary: false}) : super(operations, temporary: temporary) {
-    commands = [];
+  List<String> get commands {
+    var commands = [];
     commands.addAll(tableCommands);
     commands.addAll(indexCommands);
     commands.addAll(constraintCommands);
@@ -12,10 +12,9 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
   List<String> indexCommands = [];
   List<String> constraintCommands = [];
 
-
-  void handleAddTableCommand(SchemaTable table) {
+  void handleAddTableCommand(SchemaTable table, bool temporary) {
     var columnString = table.columns.map((sc) => _columnStringForColumn(sc)).join(",");
-    tableCommands.add("CREATE${isTemporary ? " TEMPORARY " : " "}TABLE ${table.name} (${columnString});");
+    tableCommands.add("CREATE${temporary ? " TEMPORARY " : " "}TABLE ${table.name} (${columnString});");
 
     indexCommands.addAll(table.indexes.map((i) => _indexStringForTableIndex(table, i)).toList());
 
@@ -89,11 +88,11 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
     throw 'UnsupportedOperation';
   }
 
-  void addIndex(SchemaTable table, SchemaIndex index) {
+  void handleAddIndexCommand(SchemaTable table, SchemaIndex index) {
     indexCommands.add(_indexStringForTableIndex(table, index));
   }
 
-  void deleteIndex(SchemaTable table, SchemaIndex index) {
+  void handleDeleteIndexCommand(SchemaTable table, SchemaIndex index) {
     var actualColumn = table.columns.firstWhere((col) => col.name == index.name);
     indexCommands.add("DROP INDEX ${table.name}_${_columnNameForColumn(actualColumn)}_idx ${actualColumn.relatedColumnName != null ? "CASCADE" : "RESTRICT"}");
   }

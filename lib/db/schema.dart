@@ -1,25 +1,18 @@
 part of aqueduct;
 
-class SchemaGenerator {
-  SchemaGenerator(DataModel dataModel, {String previousDataModelString: null}) {
+class Schema {
+  Schema(DataModel dataModel) {
     tables = dataModel._entities.values.map((e) => new SchemaTable(e)).toList();
+  }
 
-    serialized = _buildOperationsFromPreviousDataModelString(previousDataModelString);
+  Schema.empty() {
+    tables = [];
   }
 
   List<SchemaTable> tables;
-  List serialized;
 
-  List _buildOperationsFromPreviousDataModelString(String previousDataModelString) {
-    if (previousDataModelString == null) {
-      // Fresh, so only table.add
-      return tables
-          .map((t) => t.asSerializable())
-          .map((s) => {"op" : "table.add", "table" : s})
-          .toList();
-    }
-
-    return null;
+  SchemaTable tableForName(String name) {
+    return tables.firstWhere((t) => t.name == name, orElse: () => null);
   }
 }
 
