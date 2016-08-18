@@ -16,6 +16,7 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
     var columnString = table.columns.map((sc) => _columnStringForColumn(sc)).join(",");
     tableCommands.add("CREATE${temporary ? " TEMPORARY " : " "}TABLE ${table.name} (${columnString});");
 
+
     indexCommands.addAll(table.indexes.map((i) => _indexStringForTableIndex(table, i)).toList());
 
     List<SchemaColumn> constraints = table.columns
@@ -87,6 +88,7 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
   void handleMoveColumnCommand(SchemaTable sourceTable, SchemaTable destinationTable, SchemaColumn column) {
     throw 'UnsupportedOperation';
   }
+
 
   void handleAddIndexCommand(SchemaTable table, SchemaIndex index) {
     indexCommands.add(_indexStringForTableIndex(table, index));

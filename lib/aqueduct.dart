@@ -72,6 +72,8 @@ part 'db/model_entity_property.dart';
 part 'db/model_query.dart';
 part 'db/persistent_store.dart';
 part 'db/persistent_store_query.dart';
+part 'db/schema_generator_backend.dart';
+part 'db/migrator.dart';
 part 'db/postgresql/postgresql_persistent_store.dart';
 part 'db/postgresql/postgresql_schema_generator.dart';
 part 'db/predicate.dart';
