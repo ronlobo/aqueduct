@@ -5,11 +5,10 @@ void main() {
   test("A single, simple model", () {
     var dataModel = new DataModel([SimpleModel]);
     var generator = new Schema(dataModel);
-    var json = generator.serialized;
+    var json = generator.tables.map((st) => st.asJSON()).toList();
     expect(json.length, 1);
-    expect(json.first["op"], "table.add");
 
-    var tableJSON = json.first["table"];
+    var tableJSON = json.first;
     expect(tableJSON["name"], "_SimpleModel");
     expect(tableJSON["indexes"], []);
 
@@ -32,11 +31,10 @@ void main() {
   test("An extensive model", () {
     var dataModel = new DataModel([ExtensiveModel]);
     var generator = new Schema(dataModel);
-    var json = generator.serialized;
+    var json = generator.tables.map((st) => st.asJSON()).toList();
     expect(json.length, 1);
-    expect(json.first["op"], "table.add");
 
-    var tableJSON = json.first["table"];
+    var tableJSON = json.first;
     expect(tableJSON["name"], "_ExtensiveModel");
 
     var indexes = tableJSON["indexes"];
@@ -155,12 +153,11 @@ void main() {
   test("A model graph", () {
     var dataModel = new DataModel([Container, DefaultItem, LoadedItem, LoadedSingleItem]);
     var generator = new Schema(dataModel);
-    var json = generator.serialized;
+    var json = generator.tables.map((st) => st.asJSON()).toList();
 
     expect(json.length, 4);
-    expect(json.every((i) => i["op"] == "table.add"), true);
 
-    var containerTable = json.firstWhere((op) => op["table"]["name"] == "_Container")["table"];
+    var containerTable = json.firstWhere((t) => t["name"] == "_Container");
     expect(containerTable["name"], "_Container");
     expect(containerTable["indexes"].length, 0);
     var containerColumns = containerTable["columns"];
@@ -178,7 +175,7 @@ void main() {
       "deleteRule" : null
     });
 
-    var defaultItemTable = json.firstWhere((op) => op["table"]["name"] == "_DefaultItem")["table"];
+    var defaultItemTable = json.firstWhere((t) => t["name"] == "_DefaultItem");
     expect(defaultItemTable["name"], "_DefaultItem");
     expect(defaultItemTable["indexes"], [
       {"name" : "container"}
@@ -210,7 +207,7 @@ void main() {
       "deleteRule" : "nullify",
     });
 
-    var loadedItemTable = json.firstWhere((op) => op["table"]["name"] == "_LoadedItem")["table"];
+    var loadedItemTable = json.firstWhere((t) => t["name"] == "_LoadedItem");
     expect(loadedItemTable ["name"], "_LoadedItem");
     expect(loadedItemTable ["indexes"], [
       {"name" : "someIndexedThing"},
@@ -255,7 +252,7 @@ void main() {
       "deleteRule" : "restrict"
     });
 
-    var loadedSingleItemTable = json.firstWhere((op) => op["table"]["name"] == "_LoadedSingleItem")["table"];
+    var loadedSingleItemTable = json.firstWhere((t) => t["name"] == "_LoadedSingleItem");
     expect(loadedSingleItemTable ["name"], "_LoadedSingleItem");
     expect(loadedSingleItemTable ["indexes"], [
       {"name" : "container"}

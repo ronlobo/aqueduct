@@ -6,6 +6,7 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
     commands.addAll(tableCommands);
     commands.addAll(indexCommands);
     commands.addAll(constraintCommands);
+    return commands;
   }
 
   List<String> tableCommands = [];

@@ -188,7 +188,7 @@ Future<ModelContext> contextWithModels(List<Type> modelTypes) async {
 String commandsForModelTypes(List<Type> modelTypes, {bool temporary: false}) {
   var dataModel = new DataModel(modelTypes);
   var schema = new Schema(dataModel);
-  var commands = SchemaGenerator.generateCommandsForSchema(schema, new PostgreSQLSchemaGenerator(), temporary: true);
+  var commands = SchemaGenerator.generateCommandsForSchema(schema, new PostgreSQLSchemaGenerator(), temporary: temporary);
 
-  return commands.join(";\n");
+  return commands.join("\n");
 }
