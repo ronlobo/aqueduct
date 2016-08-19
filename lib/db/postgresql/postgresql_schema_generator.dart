@@ -1,75 +1,65 @@
 part of aqueduct;
 
 class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
-  List<String> get commands {
-    var commands = [];
-    commands.addAll(tableCommands);
-    commands.addAll(indexCommands);
-    commands.addAll(constraintCommands);
-    return commands;
-  }
-
-  List<String> tableCommands = [];
-  List<String> indexCommands = [];
-  List<String> constraintCommands = [];
+  List<String> commands = [];
 
   void handleAddTableCommand(SchemaTable table, bool temporary) {
     var columnString = table.columns.map((sc) => _columnStringForColumn(sc)).join(",");
 
-    tableCommands.add("CREATE${temporary ? " TEMPORARY " : " "}TABLE ${table.name} (${columnString});");
-    indexCommands.addAll(table.indexes.map((i) => _indexStringForTableIndex(table, i)).toList());
+    commands.add("CREATE${temporary ? " TEMPORARY " : " "}TABLE ${table.name} (${columnString});");
+    commands.addAll(table.indexes.map((i) => _indexStringForTableIndex(table, i)).toList());
 
     List<SchemaColumn> constraints = table.columns
       .where((col) => col.relatedColumnName != null)
       .toList();
-    constraintCommands.addAll(constraints.map((c) => _foreignKeyConstraintForTableConstraint(table, c)).toList());
+    commands.addAll(constraints.map((c) => _foreignKeyConstraintForTableConstraint(table, c)).toList());
   }
 
   void handleDeleteTableCommand(SchemaTable table) {
-    tableCommands.add("DROP TABLE ${table.name};");
+    commands.add("DROP TABLE ${table.name};");
   }
 
   void handleRenameTableCommand(SchemaTable table, String newName) {
-    tableCommands.add("ALTER TABLE ${table.name} RENAME TO ${newName};");
+    commands.add("ALTER TABLE ${table.name} RENAME TO ${newName};");
   }
 
   void handleAddColumnCommand(SchemaTable table, SchemaColumn column, dynamic initialValue) {
-    tableCommands.add("ALTER TABLE ${table.name} ADD COLUMN ${_columnStringForColumn(column)};");
+    commands.add("ALTER TABLE ${table.name} ADD COLUMN ${_columnStringForColumn(column)};");
 
     if (column.relatedColumnName != null) {
-      constraintCommands.add(_foreignKeyConstraintForTableConstraint(table, column));
+      commands.add(_foreignKeyConstraintForTableConstraint(table, column));
     }
   }
 
   void handleDeleteColumnCommand(SchemaTable table, SchemaColumn column) {
-    tableCommands.add("ALTER TABLE ${table.name} DROP COLUMN ${_columnNameForColumn(column)} ${column.relatedColumnName != null ? "CASCADE" : "RESTRICT"};");
+    commands.add("ALTER TABLE ${table.name} DROP COLUMN ${_columnNameForColumn(column)} ${column.relatedColumnName != null ? "CASCADE" : "RESTRICT"};");
   }
 
   void handleRenameColumnCommand(SchemaTable table, SchemaColumn existingColumn, String newName) {
-    tableCommands.add("ALTER TABLE ${table.name} RENAME COLUMN ${_columnNameForColumn(existingColumn)} TO ${newName};");
+    commands.add("ALTER TABLE ${table.name} RENAME COLUMN ${_columnNameForColumn(existingColumn)} TO ${newName};");
   }
 
   void handleAlterColumnCommand(SchemaTable table, SchemaColumn existingColumn, SchemaColumn updatedColumn, dynamic initialValue) {
     if (updatedColumn.isNullable != existingColumn.isNullable) {
       if (updatedColumn.isNullable) {
-        constraintCommands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} DROP NOT NULL;");
+        commands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} DROP NOT NULL;");
       } else if (initialValue != null) {
-        constraintCommands.add("UPDATE ${table.name} SET ${_columnNameForColumn(existingColumn)}=${initialValue} WHERE ${_columnNameForColumn(existingColumn)} IS NULL;");
-        constraintCommands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} SET NOT NULL;");
+        commands.add("UPDATE ${table.name} SET ${_columnNameForColumn(existingColumn)}=${initialValue} WHERE ${_columnNameForColumn(existingColumn)} IS NULL;");
+        commands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} SET NOT NULL;");
       } else {
         throw 'Initial value must be supplied for setting a column to not null';
       }
     }
 
     if (updatedColumn.type != existingColumn.type) {
-      constraintCommands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} SET DATA TYPE ${updatedColumn.type};");
+      commands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} SET DATA TYPE ${updatedColumn.type};");
     }
 
     if (updatedColumn.defaultValue != existingColumn.defaultValue) {
       if (updatedColumn.defaultValue != null) {
-        constraintCommands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} SET DEFAULT ${updatedColumn.defaultValue};");
+        commands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} SET DEFAULT ${updatedColumn.defaultValue};");
       } else {
-        constraintCommands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} DROP DEFAULT;");
+        commands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} DROP DEFAULT;");
       }
     }
 
@@ -91,12 +81,12 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
 
 
   void handleAddIndexCommand(SchemaTable table, SchemaIndex index) {
-    indexCommands.add(_indexStringForTableIndex(table, index));
+    commands.add(_indexStringForTableIndex(table, index));
   }
 
   void handleDeleteIndexCommand(SchemaTable table, SchemaIndex index) {
     var actualColumn = table.columns.firstWhere((col) => col.name == index.name);
-    indexCommands.add("DROP INDEX ${table.name}_${_columnNameForColumn(actualColumn)}_idx ${actualColumn.relatedColumnName != null ? "CASCADE" : "RESTRICT"}");
+    commands.add("DROP INDEX ${table.name}_${_columnNameForColumn(actualColumn)}_idx ${actualColumn.relatedColumnName != null ? "CASCADE" : "RESTRICT"}");
   }
 
   String _foreignKeyConstraintForTableConstraint(SchemaTable sourceTable, SchemaColumn column) =>

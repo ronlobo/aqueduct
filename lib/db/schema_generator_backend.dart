@@ -19,7 +19,7 @@ abstract class SchemaGeneratorBackend {
 
 class SchemaGenerator {
   static List<String> generateCommandsForSchema(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false}) {
-    schema.tables.forEach((table) {
+    schema.dependencyOrderedTables.forEach((table) {
       backend.handleAddTableCommand(table, temporary);
     });
 

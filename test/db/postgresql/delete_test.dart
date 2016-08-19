@@ -5,6 +5,9 @@ import '../../helpers.dart';
 void main() {
   ModelContext context = null;
 
+  setUpAll(() {
+  });
+
   tearDown(() async {
     await context?.persistentStore?.close();
     context = null;
@@ -227,7 +230,6 @@ class _GRestrictInverse {
 }
 
 class GRestrict extends Model<_GRestrict> implements _GRestrict {}
-
 class _GRestrict {
   @primaryKey
   int id;

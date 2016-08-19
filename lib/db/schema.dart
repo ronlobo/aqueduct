@@ -14,12 +14,32 @@ class Schema {
   }
 
   List<SchemaTable> tables;
-  SchemaTable tableForName(String name) {
-    return tables.firstWhere((t) => t.name == name, orElse: () => null);
+  List<SchemaTable> get dependencyOrderedTables => _orderedTables([], tables);
+
+  List<SchemaTable> _orderedTables(List<SchemaTable> tablesAccountedFor, List<SchemaTable> remainingTables) {
+    if (remainingTables.isEmpty) {
+      return tablesAccountedFor;
+    }
+
+    var tableIsReady = (SchemaTable t) {
+      var foreignKeyColumns = t.columns.where((sc) => sc.relatedTableName != null).toList();
+
+      if (foreignKeyColumns.isEmpty) {
+        return true;
+      }
+
+      return foreignKeyColumns
+          .map((sc) => sc.relatedTableName)
+          .every((tableName) => tablesAccountedFor.map((st) => st.name).contains(tableName));
+    };
+
+    tablesAccountedFor.addAll(remainingTables.where(tableIsReady));
+
+    return _orderedTables(tablesAccountedFor, remainingTables.where((st) => !tablesAccountedFor.contains(st)).toList());
   }
 
-  void addOperations(List<Map<String, dynamic>> operations) {
-
+  SchemaTable tableForName(String name) {
+    return tables.firstWhere((t) => t.name == name, orElse: () => null);
   }
 }
 
@@ -59,6 +79,7 @@ class SchemaTable extends SchemaElement {
     };
   }
 
+  String toString() => name;
 }
 
 class SchemaColumn extends SchemaElement {
@@ -144,6 +165,8 @@ class SchemaColumn extends SchemaElement {
       "deleteRule" : deleteRule,
     };
   }
+
+  String toString() => "$name $relatedTableName";
 }
 
 class SchemaIndex extends SchemaElement {

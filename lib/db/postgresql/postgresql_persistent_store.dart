@@ -59,11 +59,17 @@ class PostgreSQLPersistentStore extends PersistentStore {
 
   @override
   Future<dynamic> execute(String sql) async {
+    var now = new DateTime.now().toUtc();
+
     var dbConnection = await getDatabaseConnection();
     var results = await dbConnection.query(sql);
     var rows = await results.toList();
 
-    return rows.map((row) => row.toList()).toList();
+    var mappedRows = rows.map((row) => row.toList()).toList();
+
+    logger.fine(() => "Query:execute (${(new DateTime.now().toUtc().difference(now).inMilliseconds)}ms) $sql -> $mappedRows");
+
+    return mappedRows;
   }
 
   @override
