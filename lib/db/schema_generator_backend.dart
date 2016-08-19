@@ -18,10 +18,6 @@ abstract class SchemaGeneratorBackend {
 }
 
 class SchemaGenerator {
-  static const String OperationTableAdd = "table.add";
-  static const String OperationTableDelete = "table.delete";
-  static const String OperationTableRename = "table.rename";
-
   static List<String> generateCommandsForSchema(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false}) {
     schema.tables.forEach((table) {
       backend.handleAddTableCommand(table, temporary);
@@ -48,56 +44,133 @@ class SchemaGenerator {
   Schema schema;
   List<List<Map<String, dynamic>>> schemaFiles;
   bool isTemporary;
-
-  void _applyOperationToSchema(Map<String, dynamic> operation, Schema schema) {
-    var op = operation["op"];
-    switch(op) {
-      case OperationTableAdd: {
-        var table = new SchemaTable.fromJSON(operation["table"]);
-        if (schema.tableForName(table.name) != null) {
-          throw new SchemaGeneratorException("Attempted operation $operation failed, table already exists.");
-        }
-        schema.tables.add(table);
-      } break;
-    }
-  }
-
-  void _parseOperation(Map<String, dynamic> operation, Schema schema) {
-    var op = operation["op"];
-    switch(op) {
-      case OperationTableAdd: {
-        var table = new SchemaTable.fromJSON(operation["table"]);
-        schema.tables.add(table);
-        handleAddTableCommand(table);
-      } break;
-      case OperationTableDelete: {
-        var table = schema.tableForName(operation["name"]);
-        if (table == null) {
-          throw new SchemaGeneratorException("Attempted operation $operation failed, table does not exist.");
-        }
-        schema.tables.remove(table);
-        handleDeleteTableCommand(table);
-      } break;
-      case OperationTableRename: {
-        var table = schema.tableForName(operation["sourceName"]);
-        if (table == null) {
-          throw new SchemaGeneratorException("Attempted operation $operation failed, table does not exist.");
-        }
-
-        var newName = operation["destinationName"];
-        if (schema.tableForName(newName) != null) {
-          throw new SchemaGeneratorException("Attempted operation $operation failed, new table name already exists.");
-        }
-
-        table.name = newName;
-        handleRenameTableCommand(table, newName);
-      } break;
-    }
-  }
 }
 
 class SchemaGeneratorException implements Exception {
   SchemaGeneratorException(this.message);
 
   String message;
+}
+
+abstract class SchemaOperation {
+  factory SchemaOperation.fromJSON(Map<String, dynamic> operation) {
+    var opName = operation["op"];
+    var typeMirror = reflectClass(SchemaOperation);
+    LibraryMirror lib = reflect(SchemaOperation).type.owner;
+
+    ClassMirror opMirror = lib.declarations.values
+      .where((decl) => decl is ClassMirror)
+      .where((ClassMirror m) => m.isSubclassOf(typeMirror))
+      .firstWhere((ClassMirror decl) => decl.invoke(new Symbol("key"), []).reflectee == opName);
+
+
+    SchemaOperation instance = opMirror.newInstance(new Symbol(""), []).reflectee;
+    instance.readJSON(operation);
+
+    return instance;
+  }
+
+  SchemaOperation();
+
+  void readJSON(Map<String, dynamic> operation) {
+    operation.forEach((key, value) {
+      if (key == "op") {
+        return;
+      }
+
+      VariableMirror decl = reflect(this).type.declarations[new Symbol(key)];
+      if (decl.type.isSubtypeOf(reflectType(SchemaTable))) {
+        reflect(this).setField(new Symbol(key), new SchemaTable.fromJSON(value));
+      } else if (decl.type.isSubtypeOf(reflectType(SchemaIndex))) {
+        reflect(this).setField(new Symbol(key), new SchemaIndex.fromJSON(value));
+      } else if (decl.type.isSubtypeOf(reflectType(SchemaColumn))) {
+        reflect(this).setField(new Symbol(key), new SchemaColumn.fromJSON(value));
+      } else {
+        reflect(this).setField(new Symbol(key), value);
+      }
+    });
+    return reflect(this).type.declarations.values
+        .where((m) => m is VariableMirror)
+        .fold({
+          "op" : reflect(this).type.invoke(new Symbol("key"), []).reflectee
+        }, (m, VariableMirror decl) {
+          if (decl.type.isSubtypeOf(reflectType(SchemaElement))) {
+            m[MirrorSystem.getName(decl.simpleName)] = reflect(this).getField(decl.simpleName).reflectee.asJSON();
+          } else {
+            m[MirrorSystem.getName(decl.simpleName)] = reflect(this).getField(decl.simpleName).reflectee;
+          }
+
+          return m;
+        });
+  }
+
+  Map<String, dynamic> asJSON() {
+    return reflect(this).type.declarations.values
+        .where((m) => m is VariableMirror && !m.isStatic)
+        .fold({
+          "op" : reflect(this).type.invoke(new Symbol("key"), []).reflectee
+        }, (m, VariableMirror decl) {
+          if (decl.type.isSubtypeOf(reflectType(SchemaElement))) {
+            m[MirrorSystem.getName(decl.simpleName)] = reflect(this).getField(decl.simpleName).reflectee.asJSON();
+          } else {
+            m[MirrorSystem.getName(decl.simpleName)] = reflect(this).getField(decl.simpleName).reflectee;
+          }
+
+          return m;
+        });
+  }
+}
+
+class AddTableOperation extends SchemaOperation {
+  static String get key => "table.add";
+  SchemaTable table;
+}
+
+class DeleteTableOperation extends SchemaOperation {
+  static String get key => "table.delete";
+  String tableName;
+}
+
+class RenameTableOperation extends SchemaOperation {
+  static String get key => "table.rename";
+  String tableName;
+  String newTableName;
+}
+
+class AddColumnOperation extends SchemaOperation {
+  static String get key => "column.add";
+  String tableName;
+  SchemaColumn column;
+  dynamic initialValue;
+}
+
+class DeleteColumnOperation extends SchemaOperation {
+  static String get key => "column.delete";
+  String tableName;
+  String columnName;
+}
+
+class RenameColumnOperation extends SchemaOperation {
+  static String get key => "column.rename";
+  String columnName;
+  String newColumnName;
+}
+
+class AlterColumnOperation extends SchemaOperation {
+  static String get key => "column.alter";
+  String columnName;
+  SchemaColumn column;
+  dynamic initialValue;
+}
+
+class AddIndexOperation extends SchemaOperation {
+  static String get key => "index.add";
+  String tableName;
+  SchemaIndex index;
+}
+
+class DeleteIndexOperation extends SchemaOperation {
+  static String get key => "index.delete";
+  String tableName;
+  String indexName;
 }

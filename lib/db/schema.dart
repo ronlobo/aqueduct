@@ -1,5 +1,9 @@
 part of aqueduct;
 
+abstract class SchemaElement {
+  Map<String, dynamic> asJSON();
+}
+
 class Schema {
   Schema(DataModel dataModel) {
     tables = dataModel._entities.values.map((e) => new SchemaTable(e)).toList();
@@ -10,13 +14,16 @@ class Schema {
   }
 
   List<SchemaTable> tables;
-
   SchemaTable tableForName(String name) {
     return tables.firstWhere((t) => t.name == name, orElse: () => null);
   }
+
+  void addOperations(List<Map<String, dynamic>> operations) {
+
+  }
 }
 
-class SchemaTable {
+class SchemaTable extends SchemaElement {
   SchemaTable(ModelEntity entity) {
     name = entity.tableName;
 
@@ -44,17 +51,17 @@ class SchemaTable {
   List<SchemaColumn> columns;
   List<SchemaIndex> indexes;
 
-  Map<String, dynamic> asSerializable() {
+  Map<String, dynamic> asJSON() {
     return {
       "name" : name,
-      "columns" : columns.map((c) => c.asSerializable()).toList(),
-      "indexes" : indexes.map((i) => i.asSerializable()).toList()
+      "columns" : columns.map((c) => c.asJSON()).toList(),
+      "indexes" : indexes.map((i) => i.asJSON()).toList()
     };
   }
 
 }
 
-class SchemaColumn {
+class SchemaColumn extends SchemaElement {
   SchemaColumn(ModelEntity entity, PropertyDescription desc) {
     name = desc.name;
 
@@ -123,7 +130,7 @@ class SchemaColumn {
     return null;
   }
 
-  Map<String, dynamic> asSerializable() {
+  Map<String, dynamic> asJSON() {
     return {
       "name" : name,
       "type" : type,
@@ -139,7 +146,7 @@ class SchemaColumn {
   }
 }
 
-class SchemaIndex {
+class SchemaIndex extends SchemaElement {
   SchemaIndex(PropertyDescription desc) {
     name = desc.name;
   }
@@ -150,7 +157,7 @@ class SchemaIndex {
 
   String name;
 
-  Map<String, dynamic> asSerializable() {
+  Map<String, dynamic> asJSON() {
     return {
       "name" : name
     };

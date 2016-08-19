@@ -15,7 +15,7 @@ abstract class Migrator {
   void addTable(SchemaTable table) {
     operations.add({
       "op" : "table.add",
-      "table" : table.asSerializable()
+      "table" : table.asJSON()
     });
   }
 
@@ -38,7 +38,7 @@ abstract class Migrator {
     operations.add({
       "op" : "column.add",
       "tableName" : tableName,
-      "column" : column.asSerializable(),
+      "column" : column.asJSON(),
       "initialValue" : initialValue
     });
   }
@@ -58,7 +58,7 @@ abstract class Migrator {
   void addIndex(String tableName, SchemaIndex index) {
     operations.add({
       "op" : "index.add",
-      "index" : index.asSerializable()
+      "index" : index.asJSON()
     });
   }
 

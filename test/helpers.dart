@@ -173,12 +173,12 @@ Future<ModelContext> contextWithModels(List<Type> modelTypes) async {
 
   var dataModel = new DataModel(modelTypes);
   var schema = new Schema(dataModel);
-  var pGenerator = new PostgreSQLSchemaGenerator.fromSchema(schema, temporary: true);
+  var commands = SchemaGenerator.generateCommandsForSchema(schema, new PostgreSQLSchemaGenerator(), temporary: true);
 
   var context = new ModelContext(dataModel, persistentStore);
   ModelContext.defaultContext = context;
 
-  for (var cmd in pGenerator.commandList.split(";\n")) {
+  for (var cmd in commands) {
     await persistentStore.execute(cmd);
   }
 
@@ -188,7 +188,7 @@ Future<ModelContext> contextWithModels(List<Type> modelTypes) async {
 String commandsForModelTypes(List<Type> modelTypes, {bool temporary: false}) {
   var dataModel = new DataModel(modelTypes);
   var schema = new Schema(dataModel);
-  var pGenerator = new PostgreSQLSchemaGenerator.fromSchema(schema, temporary: temporary);
+  var commands = SchemaGenerator.generateCommandsForSchema(schema, new PostgreSQLSchemaGenerator(), temporary: true);
 
-  return pGenerator.commandList;
+  return commands.join(";\n");
 }

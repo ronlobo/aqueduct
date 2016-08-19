@@ -14,9 +14,8 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
 
   void handleAddTableCommand(SchemaTable table, bool temporary) {
     var columnString = table.columns.map((sc) => _columnStringForColumn(sc)).join(",");
+
     tableCommands.add("CREATE${temporary ? " TEMPORARY " : " "}TABLE ${table.name} (${columnString});");
-
-
     indexCommands.addAll(table.indexes.map((i) => _indexStringForTableIndex(table, i)).toList());
 
     List<SchemaColumn> constraints = table.columns
