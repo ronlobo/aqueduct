@@ -1,45 +1,49 @@
 part of aqueduct;
 
 class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
-  List<String> commands = [];
-
-  void handleAddTableCommand(SchemaTable table, bool temporary) {
+  List<String> handleAddTableCommand(SchemaTable table, bool temporary) {
     var columnString = table.columns.map((sc) => _columnStringForColumn(sc)).join(",");
+    List<SchemaColumn> constraints = table.columns
+        .where((col) => col.relatedColumnName != null)
+        .toList();
 
+    var commands = [];
     commands.add("CREATE${temporary ? " TEMPORARY " : " "}TABLE ${table.name} (${columnString});");
     commands.addAll(table.indexes.map((i) => _indexStringForTableIndex(table, i)).toList());
-
-    List<SchemaColumn> constraints = table.columns
-      .where((col) => col.relatedColumnName != null)
-      .toList();
     commands.addAll(constraints.map((c) => _foreignKeyConstraintForTableConstraint(table, c)).toList());
+    return commands;
   }
 
-  void handleDeleteTableCommand(SchemaTable table) {
-    commands.add("DROP TABLE ${table.name};");
+  List<String> handleDeleteTableCommand(SchemaTable table) {
+    return ["DROP TABLE ${table.name};"];
   }
 
-  void handleRenameTableCommand(SchemaTable table, String newName) {
-    commands.add("ALTER TABLE ${table.name} RENAME TO ${newName};");
+  List<String> handleRenameTableCommand(SchemaTable table, String newName) {
+    // Must also rename any referencing columns or indices/constraints that contain table name.
+    return ["ALTER TABLE ${table.name} RENAME TO ${newName};"];
   }
 
-  void handleAddColumnCommand(SchemaTable table, SchemaColumn column, dynamic initialValue) {
+  List<String> handleAddColumnCommand(SchemaTable table, SchemaColumn column, dynamic initialValue) {
+    var commands = [];
     commands.add("ALTER TABLE ${table.name} ADD COLUMN ${_columnStringForColumn(column)};");
 
     if (column.relatedColumnName != null) {
       commands.add(_foreignKeyConstraintForTableConstraint(table, column));
     }
+    return commands;
   }
 
-  void handleDeleteColumnCommand(SchemaTable table, SchemaColumn column) {
-    commands.add("ALTER TABLE ${table.name} DROP COLUMN ${_columnNameForColumn(column)} ${column.relatedColumnName != null ? "CASCADE" : "RESTRICT"};");
+  List<String> handleDeleteColumnCommand(SchemaTable table, SchemaColumn column) {
+    return ["ALTER TABLE ${table.name} DROP COLUMN ${_columnNameForColumn(column)} ${column.relatedColumnName != null ? "CASCADE" : "RESTRICT"};"];
   }
 
-  void handleRenameColumnCommand(SchemaTable table, SchemaColumn existingColumn, String newName) {
-    commands.add("ALTER TABLE ${table.name} RENAME COLUMN ${_columnNameForColumn(existingColumn)} TO ${newName};");
+  List<String> handleRenameColumnCommand(SchemaTable table, SchemaColumn existingColumn, String newName) {
+    // Must also rename any referencing indices/constraints
+    return ["ALTER TABLE ${table.name} RENAME COLUMN ${_columnNameForColumn(existingColumn)} TO ${newName};"];
   }
 
-  void handleAlterColumnCommand(SchemaTable table, SchemaColumn existingColumn, SchemaColumn updatedColumn, dynamic initialValue) {
+  List<String> handleAlterColumnCommand(SchemaTable table, SchemaColumn existingColumn, SchemaColumn updatedColumn, dynamic initialValue) {
+    var commands = [];
     if (updatedColumn.isNullable != existingColumn.isNullable) {
       if (updatedColumn.isNullable) {
         commands.add("ALTER TABLE ${table.name} ALTER COLUMN ${_columnNameForColumn(existingColumn)} DROP NOT NULL;");
@@ -73,20 +77,26 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
 //        constraintCommands.add("ALTER TABLE ${table.name} DROP CONSTRAINT ${table.name}_${_columnNameForColumn(existingColumn)}_key CASCADE;");
 //      }
     }
+
+    return commands;
   }
 
-  void handleMoveColumnCommand(SchemaTable sourceTable, SchemaTable destinationTable, SchemaColumn column) {
+  List<String> handleMoveColumnCommand(SchemaTable sourceTable, SchemaTable destinationTable, SchemaColumn column) {
     throw 'UnsupportedOperation';
   }
 
 
-  void handleAddIndexCommand(SchemaTable table, SchemaIndex index) {
-    commands.add(_indexStringForTableIndex(table, index));
+  List<String> handleAddIndexCommand(SchemaTable table, SchemaIndex index) {
+    return [_indexStringForTableIndex(table, index)];
   }
 
-  void handleDeleteIndexCommand(SchemaTable table, SchemaIndex index) {
+  List<String> handleRenameIndexCommand(SchemaTable table, SchemaIndex index, String newIndexName) {
+    return [];
+  }
+
+  List<String> handleDeleteIndexCommand(SchemaTable table, SchemaIndex index) {
     var actualColumn = table.columns.firstWhere((col) => col.name == index.name);
-    commands.add("DROP INDEX ${table.name}_${_columnNameForColumn(actualColumn)}_idx ${actualColumn.relatedColumnName != null ? "CASCADE" : "RESTRICT"}");
+    return ["DROP INDEX ${table.name}_${_columnNameForColumn(actualColumn)}_idx ${actualColumn.relatedColumnName != null ? "CASCADE" : "RESTRICT"}"];
   }
 
   String _foreignKeyConstraintForTableConstraint(SchemaTable sourceTable, SchemaColumn column) =>

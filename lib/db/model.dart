@@ -125,10 +125,7 @@ class Model<T> implements Serializable {
   }
 
   DeclarationMirror _declarationMirrorForProperty(String propertyName) {
-    var reflectedThis = reflect(this);
-    var sym = new Symbol(propertyName);
-
-    return reflectedThis.type.declarations[sym];
+    return reflect(this).type.declarations[#propertyName];
   }
 
   Mappable _mappableAttributeForDeclarationMirror(DeclarationMirror mirror) {

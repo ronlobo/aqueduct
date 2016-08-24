@@ -234,4 +234,3 @@ class AuthPipeline extends ApplicationPipeline {
     router.route("/auth/token").next(() => new AuthController(authServer));
   }
 }
-

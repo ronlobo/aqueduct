@@ -71,6 +71,14 @@ class SchemaTable extends SchemaElement {
   List<SchemaColumn> columns;
   List<SchemaIndex> indexes;
 
+  SchemaColumn columnForName(String name) {
+    return columns.firstWhere((col) => col.name == name, orElse: () => null);
+  }
+
+  SchemaIndex indexForName(String name) {
+    return indexes.firstWhere((idx) => idx.name == name, orElse: () => null);
+  }
+
   Map<String, dynamic> asJSON() {
     return {
       "name" : name,
