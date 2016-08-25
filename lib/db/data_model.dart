@@ -127,7 +127,7 @@ class DataModel {
 
     String inverseKey = relationshipAttribute.inverseKey;
     var destinationEntity = _destinationEntityForVariableMirror(entity, mirror);
-    var destinationVariableMirror = destinationEntity.persistentInstanceTypeMirror.declarations[#inverseKey];
+    var destinationVariableMirror = destinationEntity.persistentInstanceTypeMirror.declarations[new Symbol(inverseKey)];
     if (destinationVariableMirror == null) {
       throw new DataModelException("Relationship ${MirrorSystem.getName(mirror.simpleName)} on ${MirrorSystem.getName(entity.persistentInstanceTypeMirror.simpleName)} has no inverse (tried $inverseKey)");
     }

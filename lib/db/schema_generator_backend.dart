@@ -18,9 +18,18 @@ abstract class SchemaGeneratorBackend {
 
 class SchemaGenerator {
   static List<String> generateCommandsForSchema(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false}) {
+    var ops = generateInitialOperationsFromSchema(schema);
+    var commands = [];
+
+    applyOperationsToSchema(new Schema.empty(), backend, ops, temporary: temporary, outCommands: commands);
+
+    return commands;
+  }
+
+  static List<Map<String, dynamic>> generateInitialOperationsFromSchema(Schema schema) {
     return schema.dependencyOrderedTables
-        .map((table) => backend.handleAddTableCommand(table, temporary))
-        .expand((cmds) => cmds)
+        .map((st) => new AddTableOperation()..table = st)
+        .map((AddTableOperation op) => op.asJSON())
         .toList();
   }
 
@@ -43,15 +52,17 @@ class SchemaGeneratorException implements Exception {
 }
 
 abstract class SchemaOperation {
+  static String get key => null;
+
   factory SchemaOperation.fromJSON(Map<String, dynamic> operation) {
     var opName = operation["op"];
-    var typeMirror = reflectClass(SchemaOperation);
-    LibraryMirror lib = reflect(SchemaOperation).type.owner;
+    var typeMirror = reflectType(SchemaOperation);
+    LibraryMirror lib = reflectClass(SchemaOperation).owner;
 
     ClassMirror opMirror = lib.declarations.values
       .where((decl) => decl is ClassMirror)
-      .where((ClassMirror m) => m.isSubclassOf(typeMirror))
-      .firstWhere((ClassMirror decl) => decl.invoke(#key, []).reflectee == opName);
+      .where((ClassMirror m) => m.isSubtypeOf(typeMirror))
+      .firstWhere((ClassMirror decl) => decl.getField(#key).reflectee == opName);
 
 
     SchemaOperation instance = opMirror.newInstance(new Symbol(""), []).reflectee;
@@ -71,7 +82,7 @@ abstract class SchemaOperation {
         return;
       }
 
-      VariableMirror decl = reflect(this).type.declarations[#key];
+      VariableMirror decl = reflect(this).type.declarations[new Symbol(key)];
       if (decl.type.isSubtypeOf(reflectType(SchemaTable))) {
         reflect(this).setField(new Symbol(key), new SchemaTable.fromJSON(value));
       } else if (decl.type.isSubtypeOf(reflectType(SchemaIndex))) {
@@ -83,26 +94,13 @@ abstract class SchemaOperation {
       }
     });
 
-    return reflect(this).type.declarations.values
-        .where((m) => m is VariableMirror)
-        .fold({
-          "op" : reflect(this).type.invoke(#key, []).reflectee
-        }, (m, VariableMirror decl) {
-          if (decl.type.isSubtypeOf(reflectType(SchemaElement))) {
-            m[MirrorSystem.getName(decl.simpleName)] = reflect(this).getField(decl.simpleName).reflectee.asJSON();
-          } else {
-            m[MirrorSystem.getName(decl.simpleName)] = reflect(this).getField(decl.simpleName).reflectee;
-          }
-
-          return m;
-        });
   }
 
   Map<String, dynamic> asJSON() {
     return reflect(this).type.declarations.values
         .where((m) => m is VariableMirror && !m.isStatic)
         .fold({
-          "op" : reflect(this).type.invoke(#key, []).reflectee
+          "op" : reflect(this).type.getField(#key).reflectee
         }, (m, VariableMirror decl) {
           if (decl.type.isSubtypeOf(reflectType(SchemaElement))) {
             m[MirrorSystem.getName(decl.simpleName)] = reflect(this).getField(decl.simpleName).reflectee.asJSON();
