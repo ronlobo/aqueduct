@@ -284,6 +284,20 @@ void main() {
       "deleteRule" : "cascade"
     });
   });
+
+  test("Tables get ordered correctly", () {
+    var dataModel = new DataModel([SimpleModel, Container, DefaultItem, LoadedItem, LoadedSingleItem, ExtensiveModel]);
+    var generator = new Schema(dataModel);
+    var ordered = generator.dependencyOrderedTables.map((st) => st.name).toList();
+
+    expect(ordered.indexOf("_Container"), lessThan(ordered.indexOf("_DefaultItem")));
+    expect(ordered.indexOf("_Container"), lessThan(ordered.indexOf("_LoadedItem")));
+    expect(ordered.indexOf("_Container"), lessThan(ordered.indexOf("_LoadedSingleItem")));
+
+    dataModel = new DataModel([TreeLeaf, TreeRoot, TreeBranch]);
+    generator = new Schema(dataModel);
+    expect(generator.dependencyOrderedTables.map((st) => st.name).toList(), ["_TreeRoot", "_TreeBranch", "_TreeLeaf"]);
+  });
 }
 
 class Container extends Model<_Container> implements _Container {}
@@ -361,4 +375,34 @@ class _ExtensiveModel {
 
   @Attributes(databaseType: PropertyType.bigInteger, nullable: true, defaultValue: "7", unique: true, indexed: true, autoincrement: true)
   int loadedValue;
+}
+
+class TreeRoot extends Model<_TreeRoot> implements _TreeRoot {}
+class _TreeRoot {
+  @primaryKey
+  int id;
+
+  @Relationship.hasOne("root")
+  TreeBranch branch;
+}
+
+class TreeBranch extends Model<_TreeBranch> implements _TreeBranch {}
+class _TreeBranch {
+  @primaryKey
+  int id;
+
+  @Relationship.belongsTo("branch")
+  TreeRoot root;
+
+  @Relationship.hasMany("branch")
+  List<TreeLeaf> leaves;
+}
+
+class TreeLeaf extends Model<_TreeLeaf> implements _TreeLeaf {}
+class _TreeLeaf {
+  @primaryKey
+  int id;
+
+  @Relationship.belongsTo("leaves")
+  TreeBranch branch;
 }

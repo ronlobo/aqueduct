@@ -17,7 +17,7 @@ abstract class SchemaGeneratorBackend {
 }
 
 class SchemaGenerator {
-  static List<String> generateCommandsForSchema(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false}) {
+  static List<String> generateCommandsFromSchema(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false}) {
     var ops = generateInitialOperationsFromSchema(schema);
     var commands = [];
 

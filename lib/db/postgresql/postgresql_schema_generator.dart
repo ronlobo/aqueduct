@@ -43,6 +43,8 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
   }
 
   List<String> handleAlterColumnCommand(SchemaTable table, SchemaColumn existingColumn, SchemaColumn updatedColumn, dynamic initialValue) {
+    // Really shouldn't be able to change the primary key.. at least not yet.
+
     var commands = [];
     if (updatedColumn.isNullable != existingColumn.isNullable) {
       if (updatedColumn.isNullable) {

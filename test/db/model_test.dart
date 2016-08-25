@@ -357,5 +357,4 @@ class _TransientTest {
   int id;
 
   String text;
-
 }
