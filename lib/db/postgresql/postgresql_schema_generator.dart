@@ -9,7 +9,12 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
 
     var commands = [];
     commands.add("CREATE${temporary ? " TEMPORARY " : " "}TABLE ${table.name} (${columnString});");
-    commands.addAll(table.indexes.map((i) => _indexStringForTableIndex(table, i)).toList());
+
+    var indexCommands = table.columns
+        .where((column) => column.isIndexed)
+        .map((column) => "CREATE INDEX ${_indexNameForTableColumn(table, column)} ON ${table.name} (${_columnNameForColumn(column)});");
+    commands.addAll(indexCommands);
+
     commands.addAll(constraints.map((c) => _foreignKeyConstraintForTableConstraint(table, c)).toList());
     return commands;
   }
@@ -30,6 +35,7 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
     if (column.relatedColumnName != null) {
       commands.add(_foreignKeyConstraintForTableConstraint(table, column));
     }
+
     return commands;
   }
 
@@ -106,10 +112,7 @@ class PostgreSQLSchemaGenerator extends SchemaGeneratorBackend {
           "REFERENCES ${column.relatedTableName} (${column.relatedColumnName}) "
           "ON DELETE ${_deleteRuleStringForDeleteRule(column.deleteRule)};";
 
-  String _indexStringForTableIndex(SchemaTable table, SchemaIndex i) {
-    var actualColumn = table.columns.firstWhere((col) => col.name == i.name);
-    return "CREATE INDEX ${table.name}_${_columnNameForColumn(actualColumn)}_idx ON ${table.name} (${_columnNameForColumn(actualColumn)});";
-  }
+  String _indexNameForTableColumn(SchemaTable table, SchemaColumn column) => "${table.name}_${_columnNameForColumn(column)}_idx";
 
   String _columnStringForColumn(SchemaColumn col) {
     var elements = [_columnNameForColumn(col), _postgreSQLTypeForColumn(col)];

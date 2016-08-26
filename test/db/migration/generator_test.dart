@@ -78,6 +78,14 @@ void main() {
       expect(t.columns.length, 1);
       expect(t.columns.first.name, "id");
     });
+
+    test("Rename table with an index", () {
+
+    });
+
+    test("Rename table with a foreign key", () {
+      // column.relatedTableName
+    });
   });
 
   group("Deleting tables", () {

@@ -55,38 +55,25 @@ class SchemaTable extends SchemaElement {
     columns = validProperties
         .map((p) => new SchemaColumn(entity, p))
         .toList();
-
-    indexes = validProperties
-        .where((p) => p.isIndexed)
-        .map((p) => new SchemaIndex(p))
-        .toList();
   }
 
   SchemaTable.fromJSON(Map<String, dynamic> json) {
     name = json["name"];
     columns = json["columns"].map((c) => new SchemaColumn.fromJSON(c)).toList();
-    indexes = json["indexes"].map((c) => new SchemaIndex.fromJSON(c)).toList();
   }
 
   String name;
   List<SchemaColumn> columns;
-  List<SchemaIndex> indexes;
 
   SchemaColumn columnForName(String name) {
     var lowercaseName = name.toLowerCase();
     return columns.firstWhere((col) => col.name.toLowerCase() == lowercaseName, orElse: () => null);
   }
 
-  SchemaIndex indexForName(String name) {
-    var lowercaseName = name.toLowerCase();
-    return indexes.firstWhere((idx) => idx.name.toLowerCase() == lowercaseName, orElse: () => null);
-  }
-
   Map<String, dynamic> asJSON() {
     return {
       "name" : name,
-      "columns" : columns.map((c) => c.asJSON()).toList(),
-      "indexes" : indexes.map((i) => i.asJSON()).toList()
+      "columns" : columns.map((c) => c.asJSON()).toList()
     };
   }
 
@@ -111,6 +98,7 @@ class SchemaColumn extends SchemaElement {
     isNullable = desc.isNullable;
     autoincrement = desc.autoincrement;
     isUnique = desc.isUnique;
+    isIndexed = desc.isIndexed;
   }
 
   SchemaColumn.fromJSON(Map<String, dynamic> json) {
@@ -121,6 +109,7 @@ class SchemaColumn extends SchemaElement {
     isUnique = json["unique"];
     defaultValue = json["defaultValue"];
     isPrimaryKey = json["primaryKey"];
+    isIndexed = json["indexed"];
 
     relatedColumnName = json["relatedColumnName"];
     relatedTableName = json["relatedTableName"];
@@ -130,6 +119,7 @@ class SchemaColumn extends SchemaElement {
   String name;
   String type;
 
+  bool isIndexed;
   bool isNullable;
   bool autoincrement;
   bool isUnique;
@@ -174,6 +164,7 @@ class SchemaColumn extends SchemaElement {
       "relatedTableName" : relatedTableName,
       "relatedColumnName" : relatedColumnName,
       "deleteRule" : deleteRule,
+      "indexed" : isIndexed
     };
   }
 

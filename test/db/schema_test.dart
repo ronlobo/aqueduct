@@ -11,7 +11,6 @@ void main() {
 
     var tableJSON = json.first;
     expect(tableJSON["name"], "_SimpleModel");
-    expect(tableJSON["indexes"], []);
 
     var tableColumns = tableJSON["columns"];
     expect(tableColumns.length, 1);
@@ -25,7 +24,8 @@ void main() {
       "primaryKey" : true,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
   });
 
@@ -37,11 +37,6 @@ void main() {
 
     var tableJSON = json.first;
     expect(tableJSON["name"], "_ExtensiveModel");
-
-    var indexes = tableJSON["indexes"];
-    expect(indexes.length, 2);
-    expect(indexes.first["name"], "indexedValue");
-    expect(indexes.last["name"], "loadedValue");
 
     var columns = tableJSON["columns"];
     expect(columns.length, 8);
@@ -56,7 +51,8 @@ void main() {
       "primaryKey" : true,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
 
     expect(columns.firstWhere((c) => c["name"] == "startDate"), {
@@ -69,7 +65,8 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
 
     expect(columns.firstWhere((c) => c["name"] == "indexedValue"), {
@@ -82,7 +79,8 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : true
     });
 
     expect(columns.firstWhere((c) => c["name"] == "autoincrementValue"), {
@@ -95,7 +93,8 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
 
     expect(columns.firstWhere((c) => c["name"] == "uniqueValue"), {
@@ -108,7 +107,8 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
 
     expect(columns.firstWhere((c) => c["name"] == "defaultItem"), {
@@ -121,7 +121,8 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
 
     expect(columns.firstWhere((c) => c["name"] == "nullableValue"), {
@@ -134,7 +135,8 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
 
     expect(columns.firstWhere((c) => c["name"] == "loadedValue"), {
@@ -147,7 +149,8 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : true
     });
   });
 
@@ -160,7 +163,6 @@ void main() {
 
     var containerTable = json.firstWhere((t) => t["name"] == "_Container");
     expect(containerTable["name"], "_Container");
-    expect(containerTable["indexes"].length, 0);
     var containerColumns = containerTable["columns"];
     expect(containerColumns.length, 1);
     expect(containerColumns.first, {
@@ -173,14 +175,12 @@ void main() {
       "primaryKey" : true,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
 
     var defaultItemTable = json.firstWhere((t) => t["name"] == "_DefaultItem");
     expect(defaultItemTable["name"], "_DefaultItem");
-    expect(defaultItemTable["indexes"], [
-      {"name" : "container"}
-    ]);
     var defaultItemColumns = defaultItemTable["columns"];
     expect(defaultItemColumns.length, 2);
     expect(defaultItemColumns.first, {
@@ -193,7 +193,8 @@ void main() {
       "primaryKey" : true,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
     expect(defaultItemColumns.last, {
       "name" : "container",
@@ -206,14 +207,11 @@ void main() {
       "relatedTableName" : "_Container",
       "relatedColumnName" : "id",
       "deleteRule" : "nullify",
+      "indexed" : true
     });
 
     var loadedItemTable = json.firstWhere((t) => t["name"] == "_LoadedItem");
     expect(loadedItemTable ["name"], "_LoadedItem");
-    expect(loadedItemTable ["indexes"], [
-      {"name" : "someIndexedThing"},
-      {"name" : "container"}
-    ]);
     var loadedColumns = loadedItemTable["columns"];
     expect(loadedColumns.length, 3);
     expect(loadedColumns[0], {
@@ -226,7 +224,8 @@ void main() {
       "primaryKey" : true,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
     expect(loadedColumns[1], {
       "name" : "someIndexedThing",
@@ -238,7 +237,8 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : true
     });
     expect(loadedColumns[2], {
       "name" : "container",
@@ -250,14 +250,12 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : "_Container",
       "relatedColumnName" : "id",
-      "deleteRule" : "restrict"
+      "deleteRule" : "restrict",
+      "indexed" : true
     });
 
     var loadedSingleItemTable = json.firstWhere((t) => t["name"] == "_LoadedSingleItem");
     expect(loadedSingleItemTable ["name"], "_LoadedSingleItem");
-    expect(loadedSingleItemTable ["indexes"], [
-      {"name" : "container"}
-    ]);
     var loadedSingleColumns = loadedSingleItemTable["columns"];
     expect(loadedSingleColumns.length, 2);
     expect(loadedSingleColumns[0], {
@@ -270,7 +268,8 @@ void main() {
       "primaryKey" : true,
       "relatedTableName" : null,
       "relatedColumnName" : null,
-      "deleteRule" : null
+      "deleteRule" : null,
+      "indexed" : false
     });
     expect(loadedSingleColumns[1], {
       "name" : "container",
@@ -282,7 +281,8 @@ void main() {
       "primaryKey" : false,
       "relatedTableName" : "_Container",
       "relatedColumnName" : "id",
-      "deleteRule" : "cascade"
+      "deleteRule" : "cascade",
+      "indexed" : true
     });
   });
 
