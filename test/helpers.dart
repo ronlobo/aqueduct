@@ -2,6 +2,35 @@ import 'dart:async';
 import 'package:aqueduct/aqueduct.dart';
 import 'package:postgresql/postgresql.dart' as postgresql;
 
+
+Future<ModelContext> contextWithModels(List<Type> modelTypes) async {
+  var persistentStore = new PostgreSQLPersistentStore(() async {
+    var uri = "postgres://dart:dart@localhost:5432/dart_test";
+    return await postgresql.connect(uri, timeZone: 'UTC');
+  });
+
+  var dataModel = new DataModel(modelTypes);
+  var schema = new Schema(dataModel);
+  var commands = SchemaGenerator.generateCommandsFromSchema(schema, new PostgreSQLSchemaGenerator(), temporary: true);
+
+  var context = new ModelContext(dataModel, persistentStore);
+  ModelContext.defaultContext = context;
+
+  for (var cmd in commands) {
+    await persistentStore.execute(cmd);
+  }
+
+  return context;
+}
+
+String commandsForModelTypes(List<Type> modelTypes, {bool temporary: false}) {
+  var dataModel = new DataModel(modelTypes);
+  var schema = new Schema(dataModel);
+  var commands = SchemaGenerator.generateCommandsFromSchema(schema, new PostgreSQLSchemaGenerator(), temporary: temporary);
+
+  return commands.join("\n");
+}
+
 Future<List<TestUser>> createUsers(int count) async {
   var users = new List<TestUser>();
   for (int i = 0; i < count; i++) {
@@ -165,30 +194,109 @@ class AuthDelegate implements AuthenticationServerDelegate<TestUser, Token, Auth
   }
 }
 
-Future<ModelContext> contextWithModels(List<Type> modelTypes) async {
-  var persistentStore = new PostgreSQLPersistentStore(() async {
-    var uri = "postgres://dart:dart@localhost:5432/dart_test";
-    return await postgresql.connect(uri, timeZone: 'UTC');
-  });
+class Container extends Model<_Container> implements _Container {}
+class _Container {
+  @primaryKey
+  int id;
 
-  var dataModel = new DataModel(modelTypes);
-  var schema = new Schema(dataModel);
-  var commands = SchemaGenerator.generateCommandsFromSchema(schema, new PostgreSQLSchemaGenerator(), temporary: true);
+  @Relationship.hasMany("container")
+  List<DefaultItem> defaultItems;
 
-  var context = new ModelContext(dataModel, persistentStore);
-  ModelContext.defaultContext = context;
+  @Relationship.hasMany("container")
+  List<LoadedItem> loadedItems;
 
-  for (var cmd in commands) {
-    await persistentStore.execute(cmd);
-  }
-
-  return context;
+  @Relationship.hasOne("container")
+  LoadedSingleItem loadedSingleItem;
 }
 
-String commandsForModelTypes(List<Type> modelTypes, {bool temporary: false}) {
-  var dataModel = new DataModel(modelTypes);
-  var schema = new Schema(dataModel);
-  var commands = SchemaGenerator.generateCommandsFromSchema(schema, new PostgreSQLSchemaGenerator(), temporary: temporary);
+class DefaultItem extends Model<_DefaultItem> implements _DefaultItem {}
+class _DefaultItem {
+  @primaryKey
+  int id;
 
-  return commands.join("\n");
+  @Relationship.belongsTo("defaultItems")
+  Container container;
+}
+
+class LoadedItem extends Model<_LoadedItem> {}
+class _LoadedItem {
+  @primaryKey
+  int id;
+
+  @Attributes(indexed: true)
+  String someIndexedThing;
+
+  @Relationship.belongsTo("loadedItems", deleteRule: RelationshipDeleteRule.restrict, required: false)
+  Container container;
+}
+
+class LoadedSingleItem extends Model<_LoadedSingleItem> {}
+class _LoadedSingleItem {
+  @primaryKey
+  int id;
+
+  @Relationship.belongsTo("loadedSingleItem", deleteRule: RelationshipDeleteRule.cascade, required: true)
+  Container container;
+}
+
+class SimpleModel extends Model<_SimpleModel> implements _SimpleModel {}
+class _SimpleModel {
+  @primaryKey
+  int id;
+}
+
+class ExtensiveModel extends Model<_ExtensiveModel> implements _ExtensiveModel {}
+class _ExtensiveModel {
+  @Attributes(primaryKey: true, databaseType: PropertyType.string)
+  String id;
+
+  DateTime startDate;
+
+  @Attributes(indexed: true)
+  int indexedValue;
+
+  @Attributes(autoincrement: true)
+  int autoincrementValue;
+
+  @Attributes(unique: true)
+  String uniqueValue;
+
+  @Attributes(defaultValue: "'foo'")
+  String defaultItem;
+
+  @Attributes(nullable: true)
+  bool nullableValue;
+
+  @Attributes(databaseType: PropertyType.bigInteger, nullable: true, defaultValue: "7", unique: true, indexed: true, autoincrement: true)
+  int loadedValue;
+}
+
+class TreeRoot extends Model<_TreeRoot> implements _TreeRoot {}
+class _TreeRoot {
+  @primaryKey
+  int id;
+
+  @Relationship.hasOne("root")
+  TreeBranch branch;
+}
+
+class TreeBranch extends Model<_TreeBranch> implements _TreeBranch {}
+class _TreeBranch {
+  @primaryKey
+  int id;
+
+  @Relationship.belongsTo("branch")
+  TreeRoot root;
+
+  @Relationship.hasMany("branch")
+  List<TreeLeaf> leaves;
+}
+
+class TreeLeaf extends Model<_TreeLeaf> implements _TreeLeaf {}
+class _TreeLeaf {
+  @primaryKey
+  int id;
+
+  @Relationship.belongsTo("leaves")
+  TreeBranch branch;
 }

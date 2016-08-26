@@ -39,7 +39,8 @@ class Schema {
   }
 
   SchemaTable tableForName(String name) {
-    return tables.firstWhere((t) => t.name == name, orElse: () => null);
+    var lowercaseName = name.toLowerCase();
+    return tables.firstWhere((t) => t.name.toLowerCase() == lowercaseName, orElse: () => null);
   }
 }
 
@@ -72,11 +73,13 @@ class SchemaTable extends SchemaElement {
   List<SchemaIndex> indexes;
 
   SchemaColumn columnForName(String name) {
-    return columns.firstWhere((col) => col.name == name, orElse: () => null);
+    var lowercaseName = name.toLowerCase();
+    return columns.firstWhere((col) => col.name.toLowerCase() == lowercaseName, orElse: () => null);
   }
 
   SchemaIndex indexForName(String name) {
-    return indexes.firstWhere((idx) => idx.name == name, orElse: () => null);
+    var lowercaseName = name.toLowerCase();
+    return indexes.firstWhere((idx) => idx.name.toLowerCase() == lowercaseName, orElse: () => null);
   }
 
   Map<String, dynamic> asJSON() {

@@ -10,10 +10,6 @@ abstract class SchemaGeneratorBackend {
   List<String> handleRenameColumnCommand(SchemaTable table, SchemaColumn existingColumn, String newName);
   List<String> handleAlterColumnCommand(SchemaTable table, SchemaColumn existingColumn, SchemaColumn updatedColumn, dynamic initialValue);
   List<String> handleMoveColumnCommand(SchemaTable sourceTable, SchemaTable destinationTable, SchemaColumn column);
-
-  List<String> handleAddIndexCommand(SchemaTable table, SchemaIndex index);
-  List<String> handleRenameIndexCommand(SchemaTable table, SchemaIndex index, String newIndexName);
-  List<String> handleDeleteIndexCommand(SchemaTable table, SchemaIndex index);
 }
 
 class SchemaGenerator {
@@ -21,7 +17,7 @@ class SchemaGenerator {
     var ops = generateInitialOperationsFromSchema(schema);
     var commands = [];
 
-    applyOperationsToSchema(new Schema.empty(), backend, ops, temporary: temporary, outCommands: commands);
+    applyOperationsToSchema(ops, new Schema.empty(), backend: backend, temporary: temporary, outCommands: commands);
 
     return commands;
   }
@@ -34,14 +30,13 @@ class SchemaGenerator {
   }
 
   // Validate the ordered operations against a test database
-  static void applyOperationsToSchema(Schema baseSchema, SchemaGeneratorBackend backend, List<Map<String, dynamic>> operations, {bool temporary: false, List<String> outCommands}) {
+  static void applyOperationsToSchema(List<Map<String, dynamic>> operations, Schema baseSchema, {SchemaGeneratorBackend backend, bool temporary: false, List<String> outCommands}) {
     operations
         .map((op) => new SchemaOperation.fromJSON(op))
         .forEach((SchemaOperation op) {
           op.validate(baseSchema);
-          op.execute(baseSchema, backend, temporary: temporary, outCommands: outCommands);
+          op.execute(baseSchema, backend: backend, temporary: temporary, outCommands: outCommands);
         });
-    return null;
   }
 }
 
@@ -74,7 +69,7 @@ abstract class SchemaOperation {
   SchemaOperation();
 
   void validate(Schema schema);
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null});
+  void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false});
 
   void readJSON(Map<String, dynamic> operation) {
     operation.forEach((key, value) {
@@ -93,7 +88,6 @@ abstract class SchemaOperation {
         reflect(this).setField(new Symbol(key), value);
       }
     });
-
   }
 
   Map<String, dynamic> asJSON() {
@@ -123,8 +117,8 @@ class AddTableOperation extends SchemaOperation {
     }
   }
 
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
-    outCommands?.addAll(backend.handleAddTableCommand(table, temporary));
+  void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false}) {
+    outCommands?.addAll(backend?.handleAddTableCommand(table, temporary));
 
     schema.tables.add(table);
   }
@@ -140,9 +134,9 @@ class DeleteTableOperation extends SchemaOperation {
     }
   }
 
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
+  void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false}) {
     var table = schema.tableForName(tableName);
-    outCommands?.addAll(backend.handleDeleteTableCommand(table));
+    outCommands?.addAll(backend?.handleDeleteTableCommand(table));
 
     schema.tables.remove(table);
   }
@@ -163,9 +157,9 @@ class RenameTableOperation extends SchemaOperation {
     }
   }
 
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
+  void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false}) {
     var table = schema.tableForName(tableName);
-    outCommands?.addAll(backend.handleRenameTableCommand(table, newTableName));
+    outCommands?.addAll(backend?.handleRenameTableCommand(table, newTableName));
 
     table.name = newTableName;
   }
@@ -188,9 +182,9 @@ class AddColumnOperation extends SchemaOperation {
     }
   }
 
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
+  void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false}) {
     var table = schema.tableForName(tableName);
-    outCommands?.addAll(backend.handleAddColumnCommand(table, column, initialValue));
+    outCommands?.addAll(backend?.handleAddColumnCommand(table, column, initialValue));
 
     table.columns.add(column);
   }
@@ -213,11 +207,11 @@ class DeleteColumnOperation extends SchemaOperation {
     }
   }
 
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
+  void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false}) {
     var table = schema.tableForName(tableName);
     var column = table.columnForName(columnName);
 
-    outCommands?.addAll(backend.handleDeleteColumnCommand(table, column));
+    outCommands?.addAll(backend?.handleDeleteColumnCommand(table, column));
 
     table.columns.remove(column);
   }
@@ -246,11 +240,11 @@ class RenameColumnOperation extends SchemaOperation {
     }
   }
 
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
+  void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false}) {
     var table = schema.tableForName(tableName);
     var column = table.columnForName(columnName);
 
-    outCommands?.addAll(backend.handleRenameColumnCommand(table, column, newColumnName));
+    outCommands?.addAll(backend?.handleRenameColumnCommand(table, column, newColumnName));
 
     column.name = newColumnName;
   }
@@ -279,95 +273,12 @@ class AlterColumnOperation extends SchemaOperation {
     }
   }
 
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
+  void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false}) {
     var table = schema.tableForName(tableName);
     var existingColumn = table.columnForName(columnName);
 
-    outCommands?.addAll(backend.handleAlterColumnCommand(table, existingColumn, column, initialValue));
+    outCommands?.addAll(backend?.handleAlterColumnCommand(table, existingColumn, column, initialValue));
     table.columns.remove(existingColumn);
     table.columns.add(column);
-  }
-}
-
-class AddIndexOperation extends SchemaOperation {
-  static String get key => "index.add";
-  String tableName;
-  SchemaIndex index;
-
-  void validate(Schema schema) {
-    var table = schema.tableForName(tableName);
-    if (table == null) {
-      throw new SchemaGeneratorException("Add Index failed: table named ${tableName} does not exist.");
-    }
-
-    var existingIndex = table.indexForName(index.name);
-    if (existingIndex != null) {
-      throw new SchemaGeneratorException("Add Index failed: index named ${index.name} already exists on table $tableName");
-    }
-  }
-
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
-    var table = schema.tableForName(tableName);
-
-    outCommands?.addAll(backend.handleAddIndexCommand(table, index));
-    table.indexes.add(index);
-  }
-}
-
-class RenameIndexOperation extends SchemaOperation {
-  static String get key => "index.rename";
-  String tableName;
-  String indexName;
-  String newIndexName;
-
-  void validate(Schema schema) {
-    var table = schema.tableForName(tableName);
-    if (table == null) {
-      throw new SchemaGeneratorException("Rename Index failed: table named ${tableName} does not exist.");
-    }
-
-    var existingIndex = table.indexForName(indexName);
-    if (existingIndex != null) {
-      throw new SchemaGeneratorException("Rename Index failed: index named ${indexName} does not exist on table $tableName");
-    }
-
-    existingIndex = table.indexForName(newIndexName);
-    if (existingIndex != null) {
-      throw new SchemaGeneratorException("Rename Index failed: index named ${newIndexName} already exists on table $tableName");
-    }
-  }
-
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
-    var table = schema.tableForName(tableName);
-    var index = table.indexForName(indexName);
-
-    outCommands?.addAll(backend.handleRenameIndexCommand(table, index, newIndexName));
-    index.name = newIndexName;
-  }
-}
-
-class DeleteIndexOperation extends SchemaOperation {
-  static String get key => "index.delete";
-  String tableName;
-  String indexName;
-
-  void validate(Schema schema) {
-    var table = schema.tableForName(tableName);
-    if (table == null) {
-      throw new SchemaGeneratorException("Delete Index failed: table named ${tableName} does not exist.");
-    }
-
-    var existingIndex = table.indexForName(indexName);
-    if (existingIndex != null) {
-      throw new SchemaGeneratorException("Delete Index failed: index named ${indexName} does not exist on table $tableName");
-    }
-  }
-
-  void execute(Schema schema, SchemaGeneratorBackend backend, {bool temporary: false, List<String> outCommands: null}) {
-    var table = schema.tableForName(tableName);
-    var index = table.indexForName(indexName);
-
-    outCommands?.addAll(backend.handleDeleteIndexCommand(table, index));
-    table.indexes.remove(index);
   }
 }

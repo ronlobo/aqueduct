@@ -155,7 +155,7 @@ class DataModel {
     return new RelationshipDescription(entity, MirrorSystem.getName(mirror.simpleName), referenceProperty.type,
         destinationEntity, relationshipAttribute.deleteRule, relationshipAttribute.type, inverseKey,
         unique: inverseRelationshipProperties.type == RelationshipType.hasOne,
-        indexed: relationshipAttribute.type == RelationshipType.belongsTo,
+        indexed: relationshipAttribute.isIndexed,
         nullable: !relationshipAttribute.isRequired,
         includedInDefaultResultSet: true);
   }

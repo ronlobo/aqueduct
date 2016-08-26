@@ -1,5 +1,6 @@
 import 'package:aqueduct/aqueduct.dart';
 import 'package:test/test.dart';
+import '../helpers.dart';
 
 void main() {
   test("A single, simple model", () {
@@ -298,111 +299,4 @@ void main() {
     generator = new Schema(dataModel);
     expect(generator.dependencyOrderedTables.map((st) => st.name).toList(), ["_TreeRoot", "_TreeBranch", "_TreeLeaf"]);
   });
-}
-
-class Container extends Model<_Container> implements _Container {}
-class _Container {
-  @primaryKey
-  int id;
-
-  @Relationship.hasMany("container")
-  List<DefaultItem> defaultItems;
-
-  @Relationship.hasMany("container")
-  List<LoadedItem> loadedItems;
-
-  @Relationship.hasOne("container")
-  LoadedSingleItem loadedSingleItem;
-}
-
-class DefaultItem extends Model<_DefaultItem> implements _DefaultItem {}
-class _DefaultItem {
-  @primaryKey
-  int id;
-
-  @Relationship.belongsTo("defaultItems")
-  Container container;
-}
-
-class LoadedItem extends Model<_LoadedItem> {}
-class _LoadedItem {
-  @primaryKey
-  int id;
-
-  @Attributes(indexed: true)
-  String someIndexedThing;
-
-  @Relationship.belongsTo("loadedItems", deleteRule: RelationshipDeleteRule.restrict, required: false)
-  Container container;
-}
-
-class LoadedSingleItem extends Model<_LoadedSingleItem> {}
-class _LoadedSingleItem {
-  @primaryKey
-  int id;
-
-  @Relationship.belongsTo("loadedSingleItem", deleteRule: RelationshipDeleteRule.cascade, required: true)
-  Container container;
-}
-
-class SimpleModel extends Model<_SimpleModel> implements _SimpleModel {}
-class _SimpleModel {
-  @primaryKey
-  int id;
-}
-
-class ExtensiveModel extends Model<_ExtensiveModel> implements _ExtensiveModel {}
-class _ExtensiveModel {
-  @Attributes(primaryKey: true, databaseType: PropertyType.string)
-  String id;
-
-  DateTime startDate;
-
-  @Attributes(indexed: true)
-  int indexedValue;
-
-  @Attributes(autoincrement: true)
-  int autoincrementValue;
-
-  @Attributes(unique: true)
-  String uniqueValue;
-
-  @Attributes(defaultValue: "'foo'")
-  String defaultItem;
-
-  @Attributes(nullable: true)
-  bool nullableValue;
-
-  @Attributes(databaseType: PropertyType.bigInteger, nullable: true, defaultValue: "7", unique: true, indexed: true, autoincrement: true)
-  int loadedValue;
-}
-
-class TreeRoot extends Model<_TreeRoot> implements _TreeRoot {}
-class _TreeRoot {
-  @primaryKey
-  int id;
-
-  @Relationship.hasOne("root")
-  TreeBranch branch;
-}
-
-class TreeBranch extends Model<_TreeBranch> implements _TreeBranch {}
-class _TreeBranch {
-  @primaryKey
-  int id;
-
-  @Relationship.belongsTo("branch")
-  TreeRoot root;
-
-  @Relationship.hasMany("branch")
-  List<TreeLeaf> leaves;
-}
-
-class TreeLeaf extends Model<_TreeLeaf> implements _TreeLeaf {}
-class _TreeLeaf {
-  @primaryKey
-  int id;
-
-  @Relationship.belongsTo("leaves")
-  TreeBranch branch;
 }

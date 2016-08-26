@@ -52,35 +52,45 @@ class Relationship {
   /// Whether or not this relationship must be non-null.
   ///
   /// For [hasOne] or [hasMany] relationships, this has no effect. For [belongsTo] relationship, this requires the foreign key
-  /// to be non-null. The default value is false.
+  /// to be non-null. The default value is false for [belongsTo] relationships.
   bool get isRequired => type == RelationshipType.belongsTo ? _isRequired : false;
   final bool _isRequired;
+
+  /// Whether or not the representation of this relationship should be indexed by the underlying database.
+  ///
+  /// For [hasOne] or [hasMany] relationships, this has no effect. The default value is true for [belongsTo] relationships.
+  bool get isIndexed =>  type == RelationshipType.belongsTo ? _isIndexed : false;
+  final bool _isIndexed;
 
   /// Constructor for relationship to be used as metadata for a model property.
   ///
   /// [type] and [inverseName] are required. All Relationships must have an inverse in the corresponding model.
-  const Relationship(RelationshipType type, String inverseKey, {RelationshipDeleteRule deleteRule: RelationshipDeleteRule.nullify, bool required: false})
+  const Relationship(RelationshipType type, String inverseKey, {RelationshipDeleteRule deleteRule: RelationshipDeleteRule.nullify, bool required: false, bool indexed: true})
       : this.type = type,
         this.inverseKey = inverseKey,
         this.deleteRule = deleteRule,
+        this._isIndexed = indexed,
         this._isRequired = required;
 
   const Relationship.hasMany(String inverseKey) :
         this.type = RelationshipType.hasMany,
         this.inverseKey = inverseKey,
         this.deleteRule = RelationshipDeleteRule.nullify,
+        this._isIndexed = false,
         this._isRequired = false;
 
   const Relationship.hasOne(String inverseKey) :
         this.type = RelationshipType.hasOne,
         this.inverseKey = inverseKey,
         this.deleteRule = RelationshipDeleteRule.nullify,
+        this._isIndexed = false,
         this._isRequired = false;
 
-  const Relationship.belongsTo(String inverseKey, {RelationshipDeleteRule deleteRule: RelationshipDeleteRule.nullify, bool required: false}) :
+  const Relationship.belongsTo(String inverseKey, {RelationshipDeleteRule deleteRule: RelationshipDeleteRule.nullify, bool required: false, bool indexed: true}) :
         this.type = RelationshipType.belongsTo,
         this.inverseKey = inverseKey,
         this.deleteRule = deleteRule,
+        this._isIndexed = indexed,
         this._isRequired = required;
 }
 
