@@ -80,8 +80,6 @@ abstract class SchemaOperation {
       VariableMirror decl = reflect(this).type.declarations[new Symbol(key)];
       if (decl.type.isSubtypeOf(reflectType(SchemaTable))) {
         reflect(this).setField(new Symbol(key), new SchemaTable.fromJSON(value));
-      } else if (decl.type.isSubtypeOf(reflectType(SchemaIndex))) {
-        reflect(this).setField(new Symbol(key), new SchemaIndex.fromJSON(value));
       } else if (decl.type.isSubtypeOf(reflectType(SchemaColumn))) {
         reflect(this).setField(new Symbol(key), new SchemaColumn.fromJSON(value));
       } else {
@@ -132,6 +130,14 @@ class DeleteTableOperation extends SchemaOperation {
     if (schema.tableForName(tableName) == null) {
       throw new SchemaGeneratorException("Delete Table failed: table named ${tableName} does not exist.");
     }
+
+    SchemaColumn columnReferencingTable = schema.tables
+        .expand((table) => table.columns)
+        .firstWhere((SchemaColumn column) => column.relatedTableName == tableName, orElse: () => null);
+
+    if (columnReferencingTable != null) {
+      throw new SchemaGeneratorException("Delete Table failed: table named ${tableName} is referenced by column ${columnReferencingTable.name}");
+    }
   }
 
   void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false}) {
@@ -160,6 +166,13 @@ class RenameTableOperation extends SchemaOperation {
   void execute(Schema schema, {SchemaGeneratorBackend backend, List<String> outCommands, bool temporary: false}) {
     var table = schema.tableForName(tableName);
     outCommands?.addAll(backend?.handleRenameTableCommand(table, newTableName));
+
+    schema.tables
+        .expand((table) => table.columns)
+        .where((SchemaColumn column) => column.relatedTableName == tableName)
+        .forEach((SchemaColumn col) {
+          col.relatedTableName = newTableName;
+        });
 
     table.name = newTableName;
   }

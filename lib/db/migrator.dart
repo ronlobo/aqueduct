@@ -55,25 +55,25 @@ abstract class Migrator {
 
   }
 
-  void addIndex(String tableName, SchemaIndex index) {
-    operations.add({
-      "op" : "index.add",
-      "index" : index.asJSON()
-    });
-  }
-
-  void renameIndex(String tableName, String existingIndexName, String newIndexName) {
-    operations.add({
-      "op" : "index.rename",
-      "sourceName" : existingIndexName,
-      "destinationName" : newIndexName
-    });
-  }
-
-  void deleteIndex(String tableName, String indexName) {
-    operations.add({
-      "op" : "index.delete",
-      "name" : indexName
-    });
-  }
+//  void addIndex(String tableName, SchemaIndex index) {
+//    operations.add({
+//      "op" : "index.add",
+//      "index" : index.asJSON()
+//    });
+//  }
+//
+//  void renameIndex(String tableName, String existingIndexName, String newIndexName) {
+//    operations.add({
+//      "op" : "index.rename",
+//      "sourceName" : existingIndexName,
+//      "destinationName" : newIndexName
+//    });
+//  }
+//
+//  void deleteIndex(String tableName, String indexName) {
+//    operations.add({
+//      "op" : "index.delete",
+//      "name" : indexName
+//    });
+//  }
 }

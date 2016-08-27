@@ -170,21 +170,3 @@ class SchemaColumn extends SchemaElement {
 
   String toString() => "$name $relatedTableName";
 }
-
-class SchemaIndex extends SchemaElement {
-  SchemaIndex(PropertyDescription desc) {
-    name = desc.name;
-  }
-
-  SchemaIndex.fromJSON(Map<String, dynamic> json) {
-    name = json["name"];
-  }
-
-  String name;
-
-  Map<String, dynamic> asJSON() {
-    return {
-      "name" : name
-    };
-  }
-}

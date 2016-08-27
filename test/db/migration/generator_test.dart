@@ -79,17 +79,81 @@ void main() {
       expect(t.columns.first.name, "id");
     });
 
-    test("Rename table with an index", () {
+    test("Rename table with a foreign key", () {
+      var dm = new DataModel([TreeLeaf, TreeRoot, TreeBranch]);
+      var schema = new Schema(dm);
 
+      var op = {"op" : "table.rename", "tableName" : "_TreeBranch", "newTableName" : "_foobar"};
+      SchemaGenerator.applyOperationsToSchema([op], schema);
+
+      var leafTable = schema.tableForName("_TreeLeaf");
+      expect(leafTable.columns.firstWhere((c) => c.name == "branch").relatedTableName, "_foobar");
+      expect(leafTable.columns.firstWhere((c) => c.name == "branch").relatedColumnName, "id");
     });
 
-    test("Rename table with a foreign key", () {
-      // column.relatedTableName
+    test("Rename unknown table fails", () {
+      var dm = new DataModel([TreeLeaf, TreeRoot, TreeBranch]);
+      var schema = new Schema(dm);
+
+      var op = {"op" : "table.rename", "tableName" : "_TreeBark", "newTableName" : "_foobar"};
+      try {
+        SchemaGenerator.applyOperationsToSchema([op], schema);
+        expect(true, false);
+      } on SchemaGeneratorException {}
+    });
+
+    test("Rename table to already existing table fails", () {
+      var dm = new DataModel([TreeLeaf, TreeRoot, TreeBranch]);
+      var schema = new Schema(dm);
+
+      var op = {"op" : "table.rename", "tableName" : "_TreeBranch", "newTableName" : "_TreeRoot"};
+      try {
+        SchemaGenerator.applyOperationsToSchema([op], schema);
+        expect(true, false);
+      } on SchemaGeneratorException {}
     });
   });
 
   group("Deleting tables", () {
+    test("Delete simple table", () {
+      var dm = new DataModel([SimpleModel]);
+      var schema = new Schema(dm);
 
+      var op = {"op" : "table.delete", "tableName" : "_SimpleModel"};
+
+      SchemaGenerator.applyOperationsToSchema([op], schema);
+
+      var t = schema.tableForName("_foobar");
+      expect(t, isNull);
+    });
+
+    test("Delete referenced table fails while still referenced", () {
+      var dm = new DataModel([TreeLeaf, TreeRoot, TreeBranch]);
+      var schema = new Schema(dm);
+
+      var op = {"op" : "table.delete", "tableName" : "_TreeBranch"};
+      try {
+        SchemaGenerator.applyOperationsToSchema([op], schema);
+        expect(true, false);
+      } on SchemaGeneratorException {}
+    });
+
+    test("Delete previously referenced table succeeds", () {
+
+    });
+
+
+    test("Delete unknown table", () {
+      var dm = new DataModel([SimpleModel]);
+      var schema = new Schema(dm);
+
+      var op = {"op" : "table.delete", "tableName" : "_foobar"};
+
+      try {
+        SchemaGenerator.applyOperationsToSchema([op], schema);
+        expect(true, false);
+      } on SchemaGeneratorException {}
+    });
   });
 
   group("Adding columns", () {
