@@ -48,12 +48,18 @@ main() {
 
       await Future.wait(reqs);
 
-      expect(responses.any((http.Response resp) => resp.headers["server"] ==
-          "aqueduct/1"), true);
-      expect(responses.any((http.Response resp) => resp.headers["server"] ==
-          "aqueduct/2"), true);
-      expect(responses.any((http.Response resp) => resp.headers["server"] ==
-          "aqueduct/3"), true);
+      expect(
+          responses.any(
+              (http.Response resp) => resp.headers["server"] == "aqueduct/1"),
+          true);
+      expect(
+          responses.any(
+              (http.Response resp) => resp.headers["server"] == "aqueduct/2"),
+          true);
+      expect(
+          responses.any(
+              (http.Response resp) => resp.headers["server"] == "aqueduct/3"),
+          true);
     });
 
     test("Application stops", () async {
@@ -71,61 +77,63 @@ main() {
   });
 
   group("Failures", () {
-    test("Application start fails and logs appropriate message if request stream doesn't open", () async {
+    test(
+        "Application start fails and logs appropriate message if request stream doesn't open",
+        () async {
       var crashingApp = new Application<CrashSink>();
 
-      var succeeded = false;
       try {
-        crashingApp.configuration.configurationOptions = {"crashIn" : "constructor"};
+        crashingApp.configuration.configurationOptions = {
+          "crashIn": "constructor"
+        };
         await crashingApp.start();
-        succeeded = true;
-      } catch (e) {
-        expect(e.message, "TestException: constructor");
+        expect(true, false);
+      } on ApplicationStartupException catch (e) {
+        expect(e.toString(), contains("TestException: constructor"));
       }
-      expect(succeeded, false);
 
       try {
-        crashingApp.configuration.configurationOptions = {"crashIn" : "addRoutes"};
+        crashingApp.configuration.configurationOptions = {
+          "crashIn": "addRoutes"
+        };
         await crashingApp.start();
-        succeeded = true;
-      } catch (e) {
-        expect(e.message, "TestException: addRoutes");
+        expect(true, false);
+      } on ApplicationStartupException catch (e) {
+        expect(e.toString(), contains("TestException: addRoutes"));
       }
-      expect(succeeded, false);
 
       try {
-        crashingApp.configuration.configurationOptions = {"crashIn" : "willOpen"};
+        crashingApp.configuration.configurationOptions = {
+          "crashIn": "willOpen"
+        };
         await crashingApp.start();
-        succeeded = true;
-      } catch (e) {
-        expect(e.message, "TestException: willOpen");
+        expect(true, false);
+      } on ApplicationStartupException catch (e) {
+        expect(e.toString(), contains("TestException: willOpen"));
       }
-      expect(succeeded, false);
 
-      crashingApp.configuration.configurationOptions = {"crashIn" : "dontCrash"};
+      crashingApp.configuration.configurationOptions = {"crashIn": "dontCrash"};
       await crashingApp.start();
       var response = await http.get("http://localhost:8080/t");
       expect(response.statusCode, 200);
       await crashingApp.stop();
     });
 
-    test("Application that fails to open because port is bound fails gracefully", () async {
+    test(
+        "Application that fails to open because port is bound fails gracefully",
+        () async {
       var server = await HttpServer.bind(InternetAddress.ANY_IP_V4, 8080);
-      server.listen((req) {
-
-      });
+      server.listen((req) {});
 
       var conflictingApp = new Application<TestSink>();
       conflictingApp.configuration.port = 8080;
 
-      var successful = false;
       try {
         await conflictingApp.start();
-        successful = true;
-      } catch (e) {
-        expect(e, new isInstanceOf<ApplicationSupervisorException>());
+        expect(true, false);
+      } on ApplicationStartupException catch (e) {
+        expect(e, new isInstanceOf<ApplicationStartupException>());
       }
-      expect(successful, false);
 
       await server.close(force: true);
       await conflictingApp.stop();

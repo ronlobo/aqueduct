@@ -15,16 +15,14 @@ main() async {
     var app = new Application<WildfireSink>();
     app.configuration.port = config.port;
     app.configuration.configurationOptions = {
-      WildfireSink.LoggingTargetKey : logger.getNewTarget(),
-      WildfireSink.ConfigurationKey : config
+      WildfireSink.LoggingTargetKey: logger.getNewTarget(),
+      WildfireSink.ConfigurationKey: config
     };
 
     await app.start(numberOfInstances: 3);
 
     var signalPath = new File(".aqueductsignal");
     await signalPath.writeAsString("ok");
-  } on ApplicationSupervisorException catch (e, st) {
-    await writeError("IsolateSupervisorException, server failed to start: ${e.message} $st");
   } catch (e, st) {
     await writeError("Server failed to start: $e $st");
   }

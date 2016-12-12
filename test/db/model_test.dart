@@ -4,9 +4,12 @@ import 'dart:mirrors';
 import '../helpers.dart';
 
 void main() {
-  var ps = new DefaultPersistentStore();
-  ManagedDataModel dm = new ManagedDataModel([TransientTest, User, Post]);
-  ManagedContext _ = new ManagedContext(dm, ps);
+  setUpAll(() {
+    var ps = new DefaultPersistentStore();
+    ManagedDataModel dm =
+        new ManagedDataModel([TransientTest, TransientTypeTest, User, Post]);
+    var _ = new ManagedContext(dm, ps);
+  });
 
   test("NoSuchMethod still throws", () {
     var user = new User();
@@ -15,7 +18,6 @@ void main() {
 
       expect(true, false);
     } on NoSuchMethodError {}
-
   });
 
   test("Model object construction", () {
@@ -27,7 +29,6 @@ void main() {
     expect(user.id, 1);
   });
 
-
   test("Mismatched type throws exception", () {
     var user = new User();
     try {
@@ -35,13 +36,15 @@ void main() {
 
       expect(true, false);
     } on ManagedDataModelException catch (e) {
-      expect(e.message, "Type mismatch for property name on _User, expected assignable type matching ManagedPropertyType.string but got _Smi.");
+      expect(e.message,
+          "Type mismatch for property name on _User, expected assignable type matching ManagedPropertyType.string but got _Smi.");
     }
 
     try {
       reflect(user).setField(#id, "foo");
     } on ManagedDataModelException catch (e) {
-      expect(e.message, "Type mismatch for property id on _User, expected assignable type matching ManagedPropertyType.integer but got _OneByteString.");
+      expect(e.message,
+          "Type mismatch for property id on _User, expected assignable type matching ManagedPropertyType.integer but got _OneByteString.");
     }
   });
 
@@ -194,7 +197,8 @@ void main() {
       post.readMap(postMap);
       successful = true;
     } on QueryException catch (e) {
-      expect(e.toString(), "Expecting a Map for User in the owner field, got 12 instead.");
+      expect(e.toString(),
+          "Expecting a Map for User in the owner field, got 12 instead.");
     }
     expect(successful, false);
   });
@@ -213,7 +217,8 @@ void main() {
     var u = new User();
     u.name = "Bob";
     u.dateCreated = null;
-    u.name = null; // I previously set this to a value on purpose and then reset it to null
+    u.name =
+        null; // I previously set this to a value on purpose and then reset it to null
 
     expect(u.name, isNull);
     expect(u.dateCreated, isNull);
@@ -229,75 +234,55 @@ void main() {
 
   test("Transient properties aren't stored in backing", () {
     var t = new TransientTest();
-    t.readMap({"inOut" : 2});
+    t.readMap({"inOut": 2});
     expect(t.inOut, 2);
     expect(t["inOut"], isNull);
   });
 
   test("mappableInput properties are read in readMap", () {
-    var t = new TransientTest()..readMap({
-      "id" : 1,
-      "defaultedText" : "bar foo"
-    });
+    var t = new TransientTest()..readMap({"id": 1, "defaultedText": "bar foo"});
     expect(t.id, 1);
     expect(t.text, "foo");
     expect(t.inputInt, isNull);
     expect(t.inOut, isNull);
 
-    t = new TransientTest()..readMap({
-      "inputOnly" : "foo"
-    });
+    t = new TransientTest()..readMap({"inputOnly": "foo"});
     expect(t.text, "foo");
 
-    t = new TransientTest()..readMap({
-      "inputInt" : 2
-    });
+    t = new TransientTest()..readMap({"inputInt": 2});
     expect(t.inputInt, 2);
 
-    t = new TransientTest()..readMap({
-      "inOut" : 2
-    });
+    t = new TransientTest()..readMap({"inOut": 2});
     expect(t.inOut, 2);
 
-    t = new TransientTest()..readMap({
-      "bothOverQualified" : "foo"
-    });
+    t = new TransientTest()..readMap({"bothOverQualified": "foo"});
     expect(t.text, "foo");
   });
 
   test("mappableOutput properties are emitted in asMap", () {
-    var t = new TransientTest()
-      ..text = "foo";
+    var t = new TransientTest()..text = "foo";
 
     expect(t.asMap()["defaultedText"], "Mr. foo");
     expect(t.asMap()["outputOnly"], "foo");
     expect(t.asMap()["bothButOnlyOnOne"], "foo");
     expect(t.asMap()["bothOverQualified"], "foo");
 
-    t = new TransientTest()
-      ..outputInt = 2;
+    t = new TransientTest()..outputInt = 2;
     expect(t.asMap()["outputInt"], 2);
 
-    t = new TransientTest()
-      ..inOut = 2;
+    t = new TransientTest()..inOut = 2;
     expect(t.asMap()["inOut"], 2);
   });
 
   test("Transient properties are type checked in readMap", () {
     try {
-      new TransientTest()..readMap({
-        "id" : 1,
-        "defaultedText" : 2
-      });
+      new TransientTest()..readMap({"id": 1, "defaultedText": 2});
 
       throw 'Unreachable';
     } on QueryException {}
 
     try {
-      new TransientTest()..readMap({
-        "id" : 1,
-        "inputInt" : "foo"
-      });
+      new TransientTest()..readMap({"id": 1, "inputInt": "foo"});
 
       throw 'Unreachable';
     } on QueryException {}
@@ -305,46 +290,36 @@ void main() {
 
   test("Properties that aren't mappableInput are not read in readMap", () {
     try {
-      new TransientTest()..readMap({
-        "outputOnly" : "foo"
-      });
+      new TransientTest()..readMap({"outputOnly": "foo"});
       throw 'Unreachable';
     } on QueryException {}
 
     try {
-      new TransientTest()..readMap({
-        "invalidOutput" : "foo"
-      });
+      new TransientTest()..readMap({"invalidOutput": "foo"});
       throw 'Unreachable';
     } on QueryException {}
 
     try {
-      new TransientTest()..readMap({
-        "invalidInput" : "foo"
-      });
+      new TransientTest()..readMap({"invalidInput": "foo"});
       throw 'Unreachable';
     } on QueryException {}
 
     try {
-      new TransientTest()..readMap({
-        "bothButOnlyOnOne" : "foo"
-      });
+      new TransientTest()..readMap({"bothButOnlyOnOne": "foo"});
       throw 'Unreachable';
     } on QueryException {}
 
     try {
-      new TransientTest()..readMap({
-        "outputInt" : "foo"
-      });
+      new TransientTest()..readMap({"outputInt": "foo"});
       throw 'Unreachable';
     } on QueryException {}
   });
 
   test("mappableOutput properties that are null are not emitted in asMap", () {
     var m = (new TransientTest()
-      ..id = 1
-      ..text = null
-    ).asMap();
+          ..id = 1
+          ..text = null)
+        .asMap();
 
     expect(m.length, 3);
     expect(m["id"], 1);
@@ -354,10 +329,10 @@ void main() {
 
   test("Properties that aren't mappableOutput are not emitted in asMap", () {
     var m = (new TransientTest()
-      ..id = 1
-      ..text = "foo"
-      ..inputInt = 2
-    ).asMap();
+          ..id = 1
+          ..text = "foo"
+          ..inputInt = 2)
+        .asMap();
 
     expect(m.length, 6);
     expect(m["id"], 1);
@@ -368,13 +343,44 @@ void main() {
     expect(m["bothOverQualified"], "foo");
   });
 
+  test("Transient Properties of all types can be read and returned", () {
+    var dateString = "2016-10-31T15:40:45+00:00";
+
+    var m = (new TransientTypeTest()
+          ..readMap({
+            "transientInt": 5,
+            "transientBigInt": 123456789,
+            "transientString": "lowercase string",
+            "transientDate": dateString,
+            "transientBool": true,
+            "transientDouble": 30.5,
+            "transientMap": {"key": "value", "anotherKey": "anotherValue"},
+            "transientList": [1, 2, 3, 4, 5]
+          }))
+        .asMap();
+
+    expect(m["transientInt"], 5);
+    expect(m["transientBigInt"], 123456789);
+    expect(m["transientString"], "lowercase string");
+    expect(m["transientDate"].difference(DateTime.parse(dateString)),
+        Duration.ZERO);
+    expect(m["transientBool"], true);
+    expect(m["transientDouble"], 30.5);
+    expect(m["transientList"], [1, 2, 3, 4, 5]);
+
+    var tm = m["transientMap"];
+    expect(tm is Map, true);
+    expect(tm["key"], "value");
+    expect(tm["anotherKey"], "anotherValue");
+  });
+
   test("Reading hasMany relationship from JSON succeeds", () {
     var u = new User();
     u.readMap({
-      "name" : "Bob",
-      "id" : 1,
-      "posts" : [
-        {"text" : "Hi", "id" : 1}
+      "name": "Bob",
+      "id": 1,
+      "posts": [
+        {"text": "Hi", "id": 1}
       ]
     });
     expect(u.posts.length, 1);
@@ -382,12 +388,12 @@ void main() {
     expect(u.posts[0].text, "Hi");
   });
 
-  test("Reading/writing instance property that isn't marked as transient shows up nowhere", () {
+  test(
+      "Reading/writing instance property that isn't marked as transient shows up nowhere",
+      () {
     var t = new TransientTest();
     try {
-      t.readMap({
-        "notAnAttribute" : true
-      });
+      t.readMap({"notAnAttribute": true});
       expect(true, false);
     } on QueryException {}
 
@@ -414,6 +420,7 @@ class _User {
 }
 
 class Post extends ManagedObject<_Post> implements _Post {}
+
 class _Post {
   @managedPrimaryKey
   int id;
@@ -424,7 +431,8 @@ class _Post {
   User owner;
 }
 
-class TransientTest extends ManagedObject<_TransientTest> implements _TransientTest {
+class TransientTest extends ManagedObject<_TransientTest>
+    implements _TransientTest {
   String notAnAttribute;
 
   @managedTransientOutputAttribute
@@ -484,4 +492,112 @@ class _TransientTest {
   int id;
 
   String text;
+}
+
+class TransientTypeTest extends ManagedObject<_TransientTypeTest>
+    implements _TransientTypeTest {
+  @managedTransientOutputAttribute
+  int get transientInt => backingInt + 1;
+
+  @managedTransientInputAttribute
+  void set transientInt(int i) {
+    backingInt = i - 1;
+  }
+
+  @managedTransientOutputAttribute
+  int get transientBigInt => backingBigInt ~/ 2;
+
+  @managedTransientInputAttribute
+  void set transientBigInt(int i) {
+    backingBigInt = i * 2;
+  }
+
+  @managedTransientOutputAttribute
+  String get transientString => backingString.toLowerCase();
+
+  @managedTransientInputAttribute
+  void set transientString(String s) {
+    backingString = s.toUpperCase();
+  }
+
+  @managedTransientOutputAttribute
+  DateTime get transientDate => backingDateTime.add(new Duration(days: 1));
+
+  @managedTransientInputAttribute
+  void set transientDate(DateTime d) {
+    backingDateTime = d.subtract(new Duration(days: 1));
+  }
+
+  @managedTransientOutputAttribute
+  bool get transientBool => !backingBool;
+
+  @managedTransientInputAttribute
+  void set transientBool(bool b) {
+    backingBool = !b;
+  }
+
+  @managedTransientOutputAttribute
+  double get transientDouble => backingDouble / 5;
+
+  @managedTransientInputAttribute
+  void set transientDouble(double d) {
+    backingDouble = d * 5;
+  }
+
+  @managedTransientOutputAttribute
+  Map<String, String> get transientMap {
+    List<String> pairs = backingMapString.split(",");
+
+    var returnMap = new Map<String, String>();
+
+    pairs.forEach((String pair) {
+      List<String> pairList = pair.split(":");
+      returnMap[pairList[0]] = pairList[1];
+    });
+
+    return returnMap;
+  }
+
+  @managedTransientInputAttribute
+  void set transientMap(Map<String, String> m) {
+    var pairStrings = m.keys.map((key) {
+      String value = m[key];
+      return "$key:$value";
+    });
+
+    backingMapString = pairStrings.join(",");
+  }
+
+  @managedTransientOutputAttribute
+  List<int> get transientList {
+    return backingListString.split(",").map((s) => int.parse(s)).toList();
+  }
+
+  @managedTransientInputAttribute
+  void set transientList(List<int> l) {
+    backingListString = l.map((i) => i.toString()).join(",");
+  }
+}
+
+class _TransientTypeTest {
+  // All of the types - ManagedPropertyType
+  @managedPrimaryKey
+  int id;
+
+  int backingInt;
+
+  @ManagedColumnAttributes(databaseType: ManagedPropertyType.bigInteger)
+  int backingBigInt;
+
+  String backingString;
+
+  DateTime backingDateTime;
+
+  bool backingBool;
+
+  double backingDouble;
+
+  String backingMapString;
+
+  String backingListString;
 }
